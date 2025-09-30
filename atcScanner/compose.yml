@@ -1,0 +1,42 @@
+services:
+  db:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: ${DATABASE_NAME}
+      MYSQL_USER: ${DATABASE_USERNAME}
+      MYSQL_PASSWORD: ${DATABASE_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}  # Add root password
+    ports:
+      - "3306:3306"  # MySQL default port
+    volumes:
+      - mysql_data:/var/lib/mysql
+    env_file:
+      - .env
+    healthcheck:
+      test: [ "CMD", "mysql", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}", "-e", "SELECT 1" ]
+      timeout: 20s
+      retries: 10
+
+  django-web:
+   build: .
+   container_name: django-docker
+   ports:
+     - "8000:8000"
+   depends_on:
+     - db
+   environment:
+     DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+     DEBUG: ${DEBUG}
+     DJANGO_LOGLEVEL: ${DJANGO_LOGLEVEL}
+     DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
+     DATABASE_ENGINE: ${DATABASE_ENGINE}
+     DATABASE_NAME: ${DATABASE_NAME}
+     DATABASE_USERNAME: ${DATABASE_USERNAME}
+
+     DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+     DATABASE_HOST: ${DATABASE_HOST}
+     DATABASE_PORT: ${DATABASE_PORT}
+   env_file:
+     - .env
+volumes:
+   mysql_data:
