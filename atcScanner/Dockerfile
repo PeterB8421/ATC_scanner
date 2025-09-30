@@ -18,11 +18,6 @@ RUN apt-get update && apt-get install -y \
     default-libmysqlclient-dev build-essential \
   && pip install mysqlclient
 
-# Install dockerize
-ENV DOCKERIZE_VERSION v0.6.1
-RUN wget https://github.com/jwilder/dockerize/releases/download/${DOCKERIZE_VERSION}/dockerize-linux-amd64-${DOCKERIZE_VERSION}.tar.gz \
-  && tar -C /usr/local/bin -xzf dockerize-linux-amd64-${DOCKERIZE_VERSION}.tar.gz \
-  && rm dockerize-linux-amd64-${DOCKERIZE_VERSION}.tar.gz
 
 # Upgrade pip
 RUN pip install --upgrade pip
@@ -39,6 +34,12 @@ COPY . /app/
 # Expose the Django port
 EXPOSE 8000
 
+# Copy wait-for-it.sh into the image
+COPY wait-for-it.sh /usr/local/bin/wait-for-it.sh
+
+# Make it executable
+RUN chmod +x /usr/local/bin/wait-for-it.sh
+
 # Run Django’s development server
-CMD dockerize -wait tcp://$DATABASE_HOST:$DATABASE_PORT -timeout 60s -- python manage.py runserver 0.0.0.0:8000
+CMD /usr/local/bin/wait-for-it.sh db:3306 --timeout=60 --strict -- python manage.py runserver 0.0.0.0:8000
 
