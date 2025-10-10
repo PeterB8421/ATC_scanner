@@ -34,12 +34,5 @@ COPY . /app/
 # Expose the Django port
 EXPOSE 8000
 
-# Copy wait-for-it.sh into the image
-COPY wait-for-it.sh /usr/local/bin/wait-for-it.sh
-
-# Make it executable
-RUN chmod +x /usr/local/bin/wait-for-it.sh
-
 # Run Django’s development server
-CMD /usr/local/bin/wait-for-it.sh db:3306 --timeout=60 --strict -- python manage.py runserver 0.0.0.0:8000
-
+CMD python manage.py runserver 0.0.0.0:8000
