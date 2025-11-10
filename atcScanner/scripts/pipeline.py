@@ -2,6 +2,7 @@ import os
 import glob
 import subprocess
 import time
+import signal
 
 
 # Gets year from filename
@@ -41,6 +42,18 @@ def process_file(input_file):
     os.remove(input_file)
 
 
+class GracefulShutdown:
+    # Class to let the script finish working and exit
+    exit_needed = False
+
+    def __init__(self):
+        signal.signal(signal.SIGINT, self.set_exit)
+        signal.signal(signal.SIGTERM, self.set_exit)
+
+    def set_exit(self, signum, frame):
+        self.exit_needed = True
+
+
 def main():
     # Path with raw transmission files
     raw_files_path = '../records/'
@@ -48,13 +61,15 @@ def main():
     if not os.path.exists(raw_files_path):
         print('Path for raw files not found')
 
-    # Periodically check if there are any new files
-    while True:
+    terminator = GracefulShutdown()
+
+    # Periodically check if there are any new files, exit if requested
+    while not terminator.exit_needed:
         raw_files = glob.glob(raw_files_path + '*.cs16')
         print(raw_files)
         for f in raw_files:
             process_file(f)
-        time.sleep(10)
+        time.sleep(5)
 
 
 if __name__ == '__main__':
