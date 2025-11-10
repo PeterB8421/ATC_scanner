@@ -6,19 +6,19 @@ import time
 
 # Gets year from filename
 def get_year(filename):
-    part = filename.split('_')[3]
+    part = filename.split('_')[-2]
     return part[:4]
 
 
 # Gets month from filename
 def get_month(filename):
-    part = filename.split('_')[3]
+    part = filename.split('_')[-2]
     return part[4:6]
 
 
 # Gets day from filename
 def get_day(filename):
-    part = filename.split('_')[3]
+    part = filename.split('_')[-2]
     return part[-2:]
 
 
