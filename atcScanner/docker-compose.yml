@@ -19,3 +19,10 @@ services:
       DATABASE_PORT: ${DATABASE_PORT}
     env_file:
       - .env
+
+  pipeline:
+    build: .
+    command: python /app/scripts/pipeline.py
+    volumes:
+      - .:/app
+    container_name: pipeline

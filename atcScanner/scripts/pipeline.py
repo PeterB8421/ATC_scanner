@@ -7,6 +7,9 @@ import json
 import logging
 
 
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+
+
 # Gets year from filename
 def get_year(filename):
     part = filename.split('_')[-2]
@@ -30,12 +33,13 @@ def process_file(input_file, file_ext):
     # Change output file name to wav audio file
     output_filename = input_file.split('/')[-1].replace(file_ext, '.wav')
     # Creates file path according to date of the file (taken from filename)
-    output_filepath = '../audio_files/' + get_year(output_filename) + '/' + get_month(output_filename) + '/' + get_day(output_filename) + '/'
+    # output_filepath = '../audio_files/' + get_year(output_filename) + '/' + get_month(output_filename) + '/' + get_day(output_filename) + '/'
+    output_filepath = os.path.join(SCRIPT_DIR, '..', 'audio_files', get_year(output_filename), get_month(output_filename), get_day(output_filename))
     os.makedirs(output_filepath, exist_ok=True)
 
     try:
         logging.info('Processing file ' + output_filename.replace('.wav', file_ext))
-        subprocess.run(['./decode_cs16.sh', input_file, output_filepath + output_filename], check=True)
+        subprocess.run([os.path.join(SCRIPT_DIR, './decode_cs16.sh'), input_file, output_filepath + output_filename], check=True)
     except subprocess.CalledProcessError as e:
         # Prints an error if processing fails
         logging.error('Failed to decode file ' + output_filename.replace('.wav', file_ext))
@@ -45,7 +49,7 @@ def process_file(input_file, file_ext):
 
 
 def get_config():
-    config_file = 'conf/pipeline.json'
+    config_file = os.path.join(SCRIPT_DIR, 'conf', 'pipeline.json')
     with open(config_file, 'r') as f:
         settings = json.load(f)
     return settings
@@ -71,7 +75,8 @@ def main():
     )
     logging.info('Pipeline started')
     # Path with raw transmission files
-    raw_files_path = '../records/'
+    raw_files_path = os.path.join(SCRIPT_DIR, '..', 'records')
+    logging.info('raw_file_paths: ' + raw_files_path)
     # Check if the path exists
     if not os.path.exists(raw_files_path):
         logging.critical('Raw files path does not exist!')
@@ -84,7 +89,8 @@ def main():
 
     # Periodically check if there are any new files, exit if requested
     while not terminator.exit_needed:
-        raw_files = glob.glob(raw_files_path + '*' + file_ext)
+        raw_files = glob.glob(os.path.join(raw_files_path,  '*' + file_ext))
+        logging.info('Raw files: ' + str(raw_files))
         for f in raw_files:
             process_file(f, file_ext)
         time.sleep(sleep_time)
