@@ -5,7 +5,7 @@ services:
       - .:/app
     container_name: django-docker
     ports:
-      - "8000:8000"
+      - "10000:10000"
     environment:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
       DEBUG: ${DEBUG}
