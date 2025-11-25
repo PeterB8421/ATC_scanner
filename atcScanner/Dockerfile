@@ -15,9 +15,19 @@ ENV PYTHONUNBUFFERED=1
 
 # Install MySQL client for database connection
 RUN apt-get update && apt-get install -y \
-    default-libmysqlclient-dev build-essential \
-  && pip install mysqlclient
+    git \
+    build-essential \
+    libfftw3-dev \
+    pkg-config \
+    sox \
+    && rm -rf /var/lib/apt/lists/*
 
+# Clone and build csdr from source
+RUN git clone https://github.com/simonyiszk/csdr.git /tmp/csdr && \
+    cd /tmp/csdr && \
+    make && \
+    make install && \
+    rm -rf /tmp/csdr
 
 # Upgrade pip
 RUN pip install --upgrade pip
@@ -25,7 +35,7 @@ RUN pip install --upgrade pip
 # Copy the Django project  and install dependencies
 COPY requirements.txt  /app/
 
-# run this command to install all dependencies
+# Install all dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the Django project to the container

@@ -39,7 +39,7 @@ def process_file(input_file, file_ext):
 
     try:
         logging.info('Processing file ' + output_filename.replace('.wav', file_ext))
-        subprocess.run([os.path.join(SCRIPT_DIR, './decode_cs16.sh'), input_file, output_filepath + output_filename], check=True)
+        subprocess.run([os.path.join(SCRIPT_DIR, './decode_cs16.sh'), input_file, os.path.join(output_filepath, output_filename)], check=True)
     except subprocess.CalledProcessError as e:
         # Prints an error if processing fails
         logging.error('Failed to decode file ' + output_filename.replace('.wav', file_ext))
