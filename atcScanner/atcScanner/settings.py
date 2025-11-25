@@ -78,7 +78,7 @@ WSGI_APPLICATION = 'atcScanner.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.getenv('DATABASE_NAME', 'atcScanner'),
+        'NAME': os.path.join(BASE_DIR, 'atcScanner.sqlite3'),
     }
 }
 

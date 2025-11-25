@@ -1,4 +1,10 @@
 services:
+  migrate:
+    build: .
+    command: python manage.py migrate
+    volumes:
+      - .:/app
+    restart: no
   django-web:
     build: .
     volumes:
@@ -19,6 +25,8 @@ services:
       DATABASE_PORT: ${DATABASE_PORT}
     env_file:
       - .env
+    depends_on:
+      - migrate
 
   pipeline:
     build: .
@@ -26,3 +34,5 @@ services:
     volumes:
       - .:/app
     container_name: pipeline
+    depends_on:
+      - django-web
