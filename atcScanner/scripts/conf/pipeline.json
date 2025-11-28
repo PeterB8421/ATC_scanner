@@ -1,4 +1,9 @@
 {
   "sleep_time": 5,
-  "file_ext": ".cs16"
+  "file_ext": ".cs16",
+  "script_name": "decode_cs16.sh",
+  "country": "Czech republic",
+  "location": "49.25411,16.58154",
+  "center_freq": 124.500,
+  "airport_codes": "LKTB"
 }
