@@ -1,10 +1,12 @@
 import os
+import sys
 import glob
 import subprocess
 import time
 import signal
 import json
 import logging
+import django
 from datetime import date
 
 
@@ -56,6 +58,19 @@ def process_file(input_file, settings):
     }
     with open(output_filename.replace('.wav', '.json'), 'w') as f:
         json.dump(metadata, f, indent=2, sort_keys=True)
+
+    try:
+        recording = Recording.objects.create(
+            file_path=metadata['file_path'],
+            country=metadata['country'],
+            location=metadata['location'],
+            center_freq=metadata['center_freq'],
+            airport_codes=metadata['airport_codes'],
+            date=metadata['date'],
+        )
+        recording.save()
+    except Exception as e:
+        logging.error(f'Failed to save recording to database: {str(e)}')
     # Delete raw file
     os.remove(input_file)
 
@@ -85,6 +100,12 @@ def main():
         format='%(asctime)s - %(levelname)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # /app
+    sys.path.append(project_root)
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'atcScanner.settings')
+    django.setup()
+    global Recording
+    from mainApp.models import Recording
     logging.info('Pipeline started')
     # Path with raw transmission files
     raw_files_path = os.path.join(SCRIPT_DIR, '..', 'records')
