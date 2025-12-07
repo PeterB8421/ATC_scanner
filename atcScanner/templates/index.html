@@ -8,10 +8,33 @@ Homepage
     <main class="container">
         <h1>ATC traffic scanner made with Django</h1>
         <h2>Latest recordings</h2>
-        <p>There are no recordings yet!</p>
-        <div class="row">
-            <p class="col-sm">Bootstrap test</p>
-            <p class="col-sm">Second column</p>
-        </div>
+        {% if recordings %}
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th>Path to file</th>
+                <th>Country</th>
+                <th>Location</th>
+                <th>Center frequency</th>
+                <th>Airport codes</th>
+                <th>Date</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for recording in recordings %}
+                <tr>
+                <td>{{ recording.file_path }}</td>
+                <td>{{ recording.country }}</td>
+                <td>{{ recording.location }}</td>
+                <td>{{ recording.center_freq }}</td>
+                <td>{{ recording.airport_codes }}</td>
+                <td>{{ recording.date }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            <p>There are no recordings yet!</p>
+        {% endif %}
     </main>
 {% endblock %}

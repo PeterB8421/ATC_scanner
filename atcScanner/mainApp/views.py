@@ -7,7 +7,8 @@ from .models import Recording
 
 
 def index(request):
-    return render(request, 'index.html')
+    recordings = Recording.objects.order_by('-date')[:20]
+    return render(request, 'index.html', {'recordings': recordings})
 
 
 @csrf_exempt
