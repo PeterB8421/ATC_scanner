@@ -85,6 +85,7 @@ def get_config():
 class GracefulShutdown:
     # Class to let the script finish working and exit
     exit_needed = False
+    restart = False
 
     def __init__(self):
         signal.signal(signal.SIGINT, self.set_exit)
@@ -92,6 +93,9 @@ class GracefulShutdown:
 
     def set_exit(self, signum, frame):
         self.exit_needed = True
+
+    def set_restart(self):
+        self.restart = True
 
 
 def main():
@@ -119,14 +123,24 @@ def main():
 
     terminator = GracefulShutdown()
 
+    restart_flag = '/app/shared/restart_pipeline.flag'
+
     # Periodically check if there are any new files, exit if requested
-    while not terminator.exit_needed:
+    while not terminator.exit_needed and not terminator.restart:
+        if os.path.exists(restart_flag):
+            logging.info('Restart signal received')
+            os.remove(restart_flag)
+            terminator.set_restart()
         raw_files = glob.glob(os.path.join(raw_files_path,  '*' + settings['file_ext']))
         logging.info('Raw files: ' + str(raw_files))
         for f in raw_files:
             process_file(f, settings)
         time.sleep(sleep_time)
-    logging.info('Pipeline terminated')
+    if terminator.restart:
+        logging.info('Restarting pipeline')
+        exit(2)
+    else:
+        logging.info('Pipeline terminated')
 
 
 if __name__ == '__main__':

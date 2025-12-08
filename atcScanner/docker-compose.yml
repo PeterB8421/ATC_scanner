@@ -9,6 +9,7 @@ services:
     build: .
     volumes:
       - .:/app
+      - shared:/app/shared
     container_name: django-docker
     ports:
       - "10000:10000"
@@ -33,6 +34,11 @@ services:
     command: python /app/scripts/pipeline.py
     volumes:
       - .:/app
+      - shared:/app/shared
     container_name: pipeline
+    restart: unless-stopped
     depends_on:
       - django-web
+
+volumes:
+  shared:
