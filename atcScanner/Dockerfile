@@ -13,7 +13,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 #Prevents Python from buffering stdout and stderr
 ENV PYTHONUNBUFFERED=1
 
-# Install MySQL client for database connection
+
 RUN apt-get update && apt-get install -y \
     git \
     build-essential \
@@ -25,6 +25,7 @@ RUN apt-get update && apt-get install -y \
 # Clone and build csdr from source
 RUN git clone https://github.com/simonyiszk/csdr.git /tmp/csdr && \
     cd /tmp/csdr && \
+    sed -i 's/^PARAMS_NEON.*/PARAMS_NEON = -O3 -ffast-math/' Makefile && \
     make && \
     make install && \
     rm -rf /tmp/csdr
