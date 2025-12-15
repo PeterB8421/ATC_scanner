@@ -7,4 +7,4 @@ class Recording(models.Model):
     location = models.CharField(max_length=20)
     center_freq = models.FloatField()
     airport_codes = models.CharField(max_length=80)
-    date = models.DateField()
+    date = models.DateTimeField()

@@ -7,7 +7,7 @@ import signal
 import json
 import logging
 import django
-from datetime import date
+from datetime import datetime
 
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -31,12 +31,29 @@ def get_day(filename):
     return part[-2:]
 
 
+def get_hour(filename):
+    part = filename.split('_')[-1]
+    part = part.split('.')[0]
+    return part[:2]
+
+
+def get_min(filename):
+    part = filename.split('_')[-1]
+    part = part.split('.')[0]
+    return part[2:4]
+
+
+def get_sec(filename):
+    part = filename.split('_')[-1]
+    part = part.split('.')[0]
+    return part[-2:]
+
+
 # Processes a new raw file
 def process_file(input_file, settings):
     # Change output file name to wav audio file
     output_filename = input_file.split('/')[-1].replace(settings['file_ext'], '.wav')
     # Creates file path according to date of the file (taken from filename)
-    # output_filepath = '../audio_files/' + get_year(output_filename) + '/' + get_month(output_filename) + '/' + get_day(output_filename) + '/'
     output_filepath = os.path.join('/data/out', get_year(output_filename), get_month(output_filename), get_day(output_filename))
     os.makedirs(output_filepath, exist_ok=True)
     output_filename = os.path.join(output_filepath, output_filename)
@@ -48,8 +65,10 @@ def process_file(input_file, settings):
         # Prints an error if processing fails
         logging.error('Failed to decode file ' + output_filename.replace('.wav', settings['file_ext']))
         return
+    rec_datetime = datetime(int(get_year(input_file)), int(get_month(input_file)), int(get_day(input_file)),
+                            int(get_hour(input_file)), int(get_min(input_file)), int(get_sec(input_file)))
     metadata = {
-        'date': date(int(get_year(input_file)), int(get_month(input_file)), int(get_day(input_file))).isoformat(),
+        'date': rec_datetime.isoformat(),
         'file_path': output_filename,
         'country': settings['country'],
         'location': settings['location'],
@@ -66,7 +85,7 @@ def process_file(input_file, settings):
             location=metadata['location'],
             center_freq=metadata['center_freq'],
             airport_codes=metadata['airport_codes'],
-            date=metadata['date'],
+            date=rec_datetime,
         )
         recording.save()
     except Exception as e:
