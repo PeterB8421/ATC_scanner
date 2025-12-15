@@ -37,7 +37,7 @@ def process_file(input_file, settings):
     output_filename = input_file.split('/')[-1].replace(settings['file_ext'], '.wav')
     # Creates file path according to date of the file (taken from filename)
     # output_filepath = '../audio_files/' + get_year(output_filename) + '/' + get_month(output_filename) + '/' + get_day(output_filename) + '/'
-    output_filepath = os.path.join(SCRIPT_DIR, '..', 'audio_files', get_year(output_filename), get_month(output_filename), get_day(output_filename))
+    output_filepath = os.path.join('/data/out', get_year(output_filename), get_month(output_filename), get_day(output_filename))
     os.makedirs(output_filepath, exist_ok=True)
     output_filename = os.path.join(output_filepath, output_filename)
 
@@ -112,7 +112,7 @@ def main():
     from mainApp.models import Recording
     logging.info('Pipeline started')
     # Path with raw transmission files
-    raw_files_path = os.path.join(SCRIPT_DIR, '..', 'records')
+    raw_files_path = '/data/in'
     logging.info('raw_file_paths: ' + raw_files_path)
     # Check if the path exists
     if not os.path.exists(raw_files_path):

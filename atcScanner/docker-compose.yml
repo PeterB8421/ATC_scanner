@@ -10,6 +10,8 @@ services:
     volumes:
       - .:/app
       - shared:/app/shared
+      - ./records:/data/in
+      - ./audio_files:/data/out
     container_name: django-docker
     ports:
       - "10000:10000"
@@ -35,6 +37,8 @@ services:
     volumes:
       - .:/app
       - shared:/app/shared
+      - ./records:/data/in
+      - ./audio_files:/data/out
     container_name: pipeline
     restart: unless-stopped
     depends_on:
