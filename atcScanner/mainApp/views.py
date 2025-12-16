@@ -1,5 +1,8 @@
+import glob
 import json
-from django.shortcuts import render
+import os.path
+
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
@@ -11,7 +14,51 @@ from scripts.pipeline import get_config
 
 def index(request):
     recordings = Recording.objects.order_by('-date')[:20]
-    return render(request, 'index.html', {'recordings': recordings})
+    for rec in recordings:
+        rec.file_name = os.path.basename(rec.file_path)
+
+    base_path = '/data/out'
+    years = []
+    for name in os.listdir(base_path):
+        full = os.path.join(base_path, name)
+        if os.path.isdir(full) and len(name) == 4 and name.isdigit():
+            years.append(name)
+    return render(request, 'index.html', {'recordings': recordings, 'years': years})
+
+
+def detail(request, year, month, day, pk=None):
+    recording = get_object_or_404(Recording, pk=pk)
+    recording.file_name = os.path.basename(recording.file_path)
+    return render(request, 'detail.html', {'recording': recording})
+
+
+def year(request, year):
+    base_path = '/data/out/' + year
+    months = []
+    for name in os.listdir(base_path):
+        full = os.path.join(base_path, name)
+        if os.path.isdir(full) and len(name) == 2 and name.isdigit():
+            months.append(name)
+    for m in months:
+        m.lstrip('0')
+    return render(request, 'year.html', {'months': months, 'year': year})
+
+
+def month(request, year, month):
+    base_path = '/data/out/' + year + '/' + month
+    days = []
+    for name in os.listdir(base_path):
+        full = os.path.join(base_path, name)
+        if os.path.isdir(full) and len(name) == 2 and name.isdigit():
+            days.append(name)
+    return render(request, 'month.html', {'days': days, 'year': year, 'month': month})
+
+
+def day(request, year, month, day):
+    base_path = '/data/out/' + year + '/' + month + '/' + day
+    recs = glob.glob(base_path + '/*.wav')
+    recs = [os.path.basename(path) for path in recs]
+    return render(request, 'day.html', {'recs': recs, 'year': year, 'month': month, 'day': day})
 
 
 def settings(request):

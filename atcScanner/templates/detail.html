@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {{ recording.file_name }}
+{% endblock %}
+
+{% block content %}
+    <main class="container">
+        <h1>Recording detail</h1>
+        <div class="row">
+            <div class="col"><p class="fw-bold">File name</p></div>
+            <div class="col">{{ recording.file_name }}</div>
+        </div>
+        <div class="row">
+            <div class="col"><p class="fw-bold">Country</p></div>
+            <div class="col">{{ recording.country }}</div>
+        </div>
+        <div class="row">
+            <div class="col"><p class="fw-bold">Location</p></div>
+            <div class="col">{{ recording.location }}</div>
+        </div>
+        <div class="row">
+            <div class="col"><p class="fw-bold">Center frequency</p></div>
+            <div class="col">{{ recording.center_freq }}</div>
+        </div>
+        <div class="row">
+            <div class="col"><p class="fw-bold">Airport codes</p></div>
+            <div class="col">{{ recording.airport_codes }}</div>
+        </div>
+        <div class="row">
+            <div class="col"><p class="fw-bold">Date and time</p></div>
+            <div class="col">{{ recording.date }}</div>
+        </div>
+        <div class="row">
+            <div class="col"><p class="fw-bold">Signal to Noise ratio (SNR)</p></div>
+            <div class="col">{{ recording.snr }}</div>
+        </div>
+    </main>
+{% endblock %}

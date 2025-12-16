@@ -18,23 +18,39 @@ Homepage
                 <th>Center frequency</th>
                 <th>Airport codes</th>
                 <th>Date</th>
+                <th></th>
             </tr>
             </thead>
             <tbody>
             {% for recording in recordings %}
                 <tr>
-                <td>{{ recording.file_path }}</td>
+                <td>{{ recording.file_name }}</td>
                 <td>{{ recording.country }}</td>
                 <td>{{ recording.location }}</td>
                 <td>{{ recording.center_freq }}</td>
                 <td>{{ recording.airport_codes }}</td>
                 <td>{{ recording.date }}</td>
+                <td><a class="btn btn-primary" href="{% url 'detail' recording.date.year recording.date.month recording.date.day recording.pk %}">Detail</a></td>
                 </tr>
             {% endfor %}
             </tbody>
         </table>
         {% else %}
             <p>There are no recordings yet!</p>
+        {% endif %}
+    
+        <h2>All recordings</h2>
+        <h3>Year</h3>
+        {% if years %}
+            <div class="row">
+                {% for y in years %}
+                    <div class="col">
+                        <a class="btn btn-primary btn-lg" style="background-color: rgba(13, 110, 253, 0.5); color: black" href="{% url 'year' y %}">{{ y }}</a>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>There are no recordings yet.</p>
         {% endif %}
     </main>
 {% endblock %}

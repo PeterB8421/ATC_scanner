@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {{ year }}
+{% endblock %}
+
+{% block content %}
+    <main class="container">
+        <h2>All recordings</h2>
+        <h3>Year {{ year }}</h3>
+        {% if months %}
+            <div class="row">
+                {% for m in months %}
+                    <div class="col">
+                        <a class="btn btn-primary btn-lg" style="background-color: rgba(13, 110, 253, 0.5); color: black" href="{% url 'month' year m %}">{{ m }}</a>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>There are no recordings yet.</p>
+        {% endif %}
+    </main>
+{% endblock %}
