@@ -60,7 +60,7 @@ def process_file(input_file, settings):
 
     try:
         logging.info('Processing file ' + output_filename.replace('.wav', settings['file_ext']))
-        subprocess.run([os.path.join(SCRIPT_DIR, './decode_cs16.sh'), input_file, output_filename], check=True)
+        subprocess.run([os.path.join('/scripts', settings['script_name']), input_file, output_filename], check=True)
     except subprocess.CalledProcessError as e:
         # Prints an error if processing fails
         logging.error('Failed to decode file ' + output_filename.replace('.wav', settings['file_ext']))
@@ -95,7 +95,7 @@ def process_file(input_file, settings):
 
 
 def get_config():
-    config_file = os.path.join(SCRIPT_DIR, 'conf', 'pipeline.json')
+    config_file = '/scripts/conf/pipeline.json'
     with open(config_file, 'r') as f:
         settings = json.load(f)
     return settings
