@@ -9,3 +9,4 @@ class SettingsForm(forms.Form):
     location = forms.CharField(max_length=30)
     center_freq = forms.FloatField(min_value=0, step_size=0.1)
     airport_codes = forms.CharField(max_length=40)
+    snr_thres = forms.FloatField()

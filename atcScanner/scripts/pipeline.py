@@ -7,6 +7,8 @@ import signal
 import json
 import logging
 import django
+import numpy as np
+import scipy.io.wavfile as wawfile
 from datetime import datetime
 
 
@@ -49,6 +51,16 @@ def get_sec(filename):
     return part[-2:]
 
 
+def estimate_snr(audio, snr_table):
+    # Source estimateSNR.py provided by thesis supervisor
+    snrs = snr_table[:, 0];
+    Gzs = snr_table[:, 1];
+    Gz = np.log(np.mean(abs(audio) + 1.0)) - np.mean(np.log(abs(audio) + 1.0));
+    pos = np.argmin(np.abs(Gzs - Gz));
+    snr = snrs[pos];
+    return snr;
+
+
 # Processes a new raw file
 def process_file(input_file, settings):
     # Change output file name to wav audio file
@@ -65,6 +77,17 @@ def process_file(input_file, settings):
         # Prints an error if processing fails
         logging.error('Failed to decode file ' + output_filename.replace('.wav', settings['file_ext']))
         return
+
+    Fs, sig = wawfile.read(output_filename)
+    snr_table = np.loadtxt('/scripts/SNR_table_-100_100.tab')
+
+    snr = estimate_snr(sig, snr_table)
+    if snr < settings['snr_thres']:
+        logging.info(f'Removing {output_filename} SNR = {snr}, thres = {settings["snr_thres"]}')
+        os.remove(output_filename)
+        os.remove(input_file)
+        return
+
     rec_datetime = datetime(int(get_year(input_file)), int(get_month(input_file)), int(get_day(input_file)),
                             int(get_hour(input_file)), int(get_min(input_file)), int(get_sec(input_file)))
     metadata = {
@@ -74,6 +97,7 @@ def process_file(input_file, settings):
         'location': settings['location'],
         'center_freq': settings['center_freq'],
         'airport_codes': settings['airport_codes'],
+        'snr': snr,
     }
     with open(output_filename.replace('.wav', '.json'), 'w') as f:
         json.dump(metadata, f, indent=2, sort_keys=True)
@@ -86,6 +110,7 @@ def process_file(input_file, settings):
             center_freq=metadata['center_freq'],
             airport_codes=metadata['airport_codes'],
             date=rec_datetime,
+            snr=metadata['snr'],
         )
         recording.save()
     except Exception as e:

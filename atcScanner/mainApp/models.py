@@ -8,3 +8,4 @@ class Recording(models.Model):
     center_freq = models.FloatField()
     airport_codes = models.CharField(max_length=80)
     date = models.DateTimeField()
+    snr = models.FloatField()

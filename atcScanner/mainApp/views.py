@@ -22,7 +22,7 @@ def settings(request):
         form = SettingsForm(request.POST)
         if form.is_valid():
             with open('/app/scripts/conf/pipeline.json', 'w') as f:
-                json.dump(form.cleaned_data, f)
+                json.dump(form.cleaned_data, f, indent=2, sort_keys=True)
             messages.success(request, 'Settings saved, restarting pipeline service')
             with open('/app/shared/restart_pipeline.flag', 'w') as f:
                 f.write('restart')
