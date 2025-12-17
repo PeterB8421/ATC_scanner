@@ -26,10 +26,17 @@ def index(request):
     return render(request, 'index.html', {'recordings': recordings, 'years': years})
 
 
-def detail(request, year, month, day, pk=None):
-    recording = get_object_or_404(Recording, pk=pk)
-    recording.file_name = os.path.basename(recording.file_path)
-    return render(request, 'detail.html', {'recording': recording})
+def detail(request, year, month, day, fname=None, pk=None):
+    if fname is None and pk is None:
+        return HttpResponse('Incorrect URL', status=404)
+    if pk is not None:
+        recording = get_object_or_404(Recording, pk=pk)
+        recording.file_name = os.path.basename(recording.file_path)
+        return render(request, 'detail.html', {'recording': recording})
+    else:
+        fpath = os.path.join('/data/out', year, month, day, fname)
+        recording = get_object_or_404(Recording, file_path=fpath)
+        return render(request, 'detail.html', {'recording': recording})
 
 
 def year(request, year):

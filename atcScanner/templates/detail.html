@@ -7,6 +7,10 @@
 {% block content %}
     <main class="container">
         <h1>Recording detail</h1>
+        <audio controls>
+            <source src="{{ recording.file_path }}" type="audio/wav">
+            Your browser does not support the audio element.
+        </audio>
         <div class="row">
             <div class="col"><p class="fw-bold">File name</p></div>
             <div class="col">{{ recording.file_name }}</div>

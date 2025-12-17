@@ -10,7 +10,7 @@
         <h3>Year {{ year }} month {{ month }} day {{ day }}</h3>
         {% if recs %}
             {% for r in recs %}
-                <p>{{ r }}</p>
+                <a href="{% url 'detail' year month day r %}">{{ r }}</a>
             {% endfor %}
         {% else %}
             <p>There are no recordings yet.</p>
