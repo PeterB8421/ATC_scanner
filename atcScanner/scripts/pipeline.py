@@ -82,12 +82,14 @@ def process_file(input_file, settings):
     snr_table = np.loadtxt('/scripts/SNR_table_-100_100.tab')
 
     snr = estimate_snr(sig, snr_table)
+    # Delete automatically if there is too much noise
     if snr < settings['snr_thres']:
         logging.info(f'Removing {output_filename} SNR = {snr}, thres = {settings["snr_thres"]}')
         os.remove(output_filename)
         os.remove(input_file)
         return
 
+    # Get date and time from file name
     rec_datetime = datetime(int(get_year(input_file)), int(get_month(input_file)), int(get_day(input_file)),
                             int(get_hour(input_file)), int(get_min(input_file)), int(get_sec(input_file)))
     metadata = {
@@ -99,9 +101,11 @@ def process_file(input_file, settings):
         'airport_codes': settings['airport_codes'],
         'snr': snr,
     }
+    # Save JSON metadata next to wav file
     with open(output_filename.replace('.wav', '.json'), 'w') as f:
         json.dump(metadata, f, indent=2, sort_keys=True)
 
+    # Try saving to database, if saving fails, continue
     try:
         recording = Recording.objects.create(
             file_path=metadata['file_path'],
@@ -120,6 +124,7 @@ def process_file(input_file, settings):
 
 
 def get_config():
+    # Loads configuration from JSON file and returns dict with loaded settings
     config_file = '/scripts/conf/pipeline.json'
     with open(config_file, 'r') as f:
         settings = json.load(f)
@@ -143,6 +148,7 @@ class GracefulShutdown:
 
 
 def main():
+    # Logging settings
     logging.basicConfig(
         level=logging.DEBUG,
         format='%(asctime)s - %(levelname)s - %(message)s',
@@ -150,9 +156,10 @@ def main():
     )
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # /app
     sys.path.append(project_root)
+    # Do Django setup, without this, saving to database won't work
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'atcScanner.settings')
     django.setup()
-    global Recording
+    global Recording # Expose Recording class as global for data insertion
     from mainApp.models import Recording
     logging.info('Pipeline started')
     # Path with raw transmission files
@@ -169,17 +176,25 @@ def main():
 
     restart_flag = '/app/shared/restart_pipeline.flag'
 
+    elapsed_time_sec = 0
     # Periodically check if there are any new files, exit if requested
     while not terminator.exit_needed and not terminator.restart:
+        # If settings were changed, restart pipeline
         if os.path.exists(restart_flag):
             logging.info('Restart signal received')
             os.remove(restart_flag)
             terminator.set_restart()
-        raw_files = glob.glob(os.path.join(raw_files_path,  '*' + settings['file_ext']))
-        logging.info('Raw files: ' + str(raw_files))
-        for f in raw_files:
-            process_file(f, settings)
-        time.sleep(sleep_time)
+
+        if elapsed_time_sec >= settings['sleep_time']:
+            elapsed_time_sec = 0
+            raw_files = glob.glob(os.path.join(raw_files_path,  '*' + settings['file_ext']))
+            logging.info('Raw files: ' + str(raw_files))
+            for f in raw_files:
+                process_file(f, settings)
+        # Sleep for 1 second to restart or shutdown quicker
+        time.sleep(1)
+        elapsed_time_sec += 1
+
     if terminator.restart:
         logging.info('Restarting pipeline')
         exit(2)

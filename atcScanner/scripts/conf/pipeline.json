@@ -6,5 +6,5 @@
   "location": "49.25411,16.58154",
   "script_name": "decode_cs16.sh",
   "sleep_time": 5,
-  "snr_thres": 0.0
+  "snr_thres": -50.0
 }
