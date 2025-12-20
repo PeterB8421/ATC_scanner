@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ATC scanner | {% block title %} {% endblock %}</title>
+    <title>ATC pipeline | {% block title %} {% endblock %}</title>
     {% load django_bootstrap5 %}
     {% bootstrap_css %}
     {% bootstrap_javascript %}
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <a class="navbar-brand" href="{% url 'index' %}">ATC Scanner</a>
+    <a class="navbar-brand" href="{% url 'index' %}">ATC pipeline</a>
     <ul class="navbar-nav mr-auto">
         <li class="nav-item"><a class="nav-link" href="{% url 'settings' %}">Settings</a></li>
     </ul>
@@ -24,6 +24,10 @@
             {% endfor %}
           </div>
         {% endif %}
+
+{% block breadcrumbs %}
+{% endblock %}
+
 {% block content %}
 {% endblock %}
 </body>

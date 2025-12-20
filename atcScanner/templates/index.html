@@ -6,7 +6,7 @@ Homepage
 
 {% block content %}
     <main class="container">
-        <h1>ATC traffic scanner made with Django</h1>
+        <h1>ATC traffic processing pipeline</h1>
         <h2>Latest recordings</h2>
         {% if recordings %}
         <table class="table table-striped">
@@ -21,7 +21,7 @@ Homepage
             <tbody>
             {% for recording in recordings %}
                 <tr>
-                    <td><a href="{% url 'detail' recording.date.year recording.date.month recording.date.day recording.pk %}">{{ recording.file_name }}</a></td>
+                    <td><a href="{% url 'detail' recording.date.year recording.month_str recording.day_str recording.pk %}">{{ recording.file_name }}</a></td>
                 <td>
                     <audio controls>
                         <source src="{{ recording.file_path }}" type="audio/wav">
@@ -29,7 +29,7 @@ Homepage
                     </audio>
                 </td>
                 <td>{{ recording.date }}</td>
-                <td><a class="btn btn-primary" href="{% url 'detail' recording.date.year recording.date.month recording.date.day recording.pk %}">Detail</a></td>
+                <td><a class="btn btn-primary" href="{% url 'detail' recording.date.year recording.month_str recording.day_str recording.pk %}">Detail</a></td>
                 </tr>
             {% endfor %}
             </tbody>

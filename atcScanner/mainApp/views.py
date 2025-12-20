@@ -6,6 +6,7 @@ from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
+from django.utils.dateparse import parse_datetime
 from datetime import date
 from .models import Recording
 from .forms import SettingsForm
@@ -16,6 +17,8 @@ def index(request):
     recordings = Recording.objects.order_by('-date')[:20]
     for rec in recordings:
         rec.file_name = os.path.basename(rec.file_path)
+        rec.month_str = f'{rec.date.month:02d}'
+        rec.day_str = f'{rec.date.day:02d}'
 
     base_path = '/data/out'
     years = []
@@ -32,11 +35,24 @@ def detail(request, year, month, day, fname=None, pk=None):
     if pk is not None:
         recording = get_object_or_404(Recording, pk=pk)
         recording.file_name = os.path.basename(recording.file_path)
-        return render(request, 'detail.html', {'recording': recording})
     else:
         fpath = os.path.join('/data/out', year, month, day, fname)
-        recording = get_object_or_404(Recording, file_path=fpath)
-        return render(request, 'detail.html', {'recording': recording})
+        with open(fpath.replace('.wav', '.json'), 'r') as f:
+            metadata = json.load(f)
+
+        kwargs = {
+            'file_path': metadata['file_path'],
+            'country': metadata['country'],
+            'location': metadata['location'],
+            'center_freq': metadata['center_freq'],
+            'airport_codes': metadata['airport_codes'],
+            'date': parse_datetime(metadata['date']),
+            'snr': metadata['snr'],
+        }
+
+        recording = Recording(**kwargs)
+        recording.file_name = fname
+    return render(request, 'detail.html', {'recording': recording, 'year': year, 'month': month, 'day': day})
 
 
 def year(request, year):
