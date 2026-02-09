@@ -91,6 +91,13 @@ def settings(request):
     elif request.method == "POST":
         form = SettingsForm(request.POST)
         if form.is_valid():
+            if form.cleaned_data['file_ext'] == '.cs16':
+                form.cleaned_data['script_name'] = 'decode_cs16.sh'
+            elif form.cleaned_data['file_ext'] == '.cf32':
+                form.cleaned_data['script_name'] = 'decode_cf32.sh'
+            else:
+                messages.error(request, 'Unsupported input file type')
+                return render(request, 'settings.html', {'form': form})
             with open('/app/scripts/conf/pipeline.json', 'w') as f:
                 json.dump(form.cleaned_data, f, indent=2, sort_keys=True)
             messages.success(request, 'Settings saved, restarting pipeline service')
