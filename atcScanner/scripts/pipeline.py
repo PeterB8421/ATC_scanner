@@ -7,12 +7,19 @@ import signal
 import json
 import logging
 import django
+from SNR import SNR
 import numpy as np
 import scipy.io.wavfile as wawfile
 from datetime import datetime
 
 
-SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+# Import shared config function
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(script_dir)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+from config_utils import get_config
 
 
 # Gets year from filename
@@ -51,14 +58,14 @@ def get_sec(filename):
     return part[-2:]
 
 
-def estimate_snr(audio, snr_table):
-    # Source estimateSNR.py provided by thesis supervisor
-    snrs = snr_table[:, 0];
-    Gzs = snr_table[:, 1];
-    Gz = np.log(np.mean(abs(audio) + 1.0)) - np.mean(np.log(abs(audio) + 1.0));
-    pos = np.argmin(np.abs(Gzs - Gz));
-    snr = snrs[pos];
-    return snr;
+# def estimate_snr(audio, snr_table):
+#     # Source estimateSNR.py provided by thesis supervisor
+#     snrs = snr_table[:, 0];
+#     Gzs = snr_table[:, 1];
+#     Gz = np.log(np.mean(abs(audio) + 1.0)) - np.mean(np.log(abs(audio) + 1.0));
+#     pos = np.argmin(np.abs(Gzs - Gz));
+#     snr = snrs[pos];
+#     return snr;
 
 
 # Processes a new raw file
@@ -78,10 +85,11 @@ def process_file(input_file, settings):
         logging.error('Failed to decode file ' + output_filename.replace('.wav', settings['file_ext']))
         return
 
-    Fs, sig = wawfile.read(output_filename)
-    snr_table = np.loadtxt('/scripts/SNR_table_-100_100.tab')
+    # Fs, sig = wawfile.read(output_filename)
+    # snr_table = np.loadtxt('/scripts/SNR_table_-100_100.tab')
 
-    snr = estimate_snr(sig, snr_table)
+    # snr = estimate_snr(sig, snr_table)
+    snr = SNR(output_filename).get_snr()
     # Delete automatically if there is too much noise
     if snr < settings['snr_thres']:
         logging.info(f'Removing {output_filename} SNR = {snr}, thres = {settings["snr_thres"]}')
@@ -121,14 +129,6 @@ def process_file(input_file, settings):
         logging.error(f'Failed to save recording to database: {str(e)}')
     # Delete raw file
     os.remove(input_file)
-
-
-def get_config():
-    # Loads configuration from JSON file and returns dict with loaded settings
-    config_file = '/scripts/conf/pipeline.json'
-    with open(config_file, 'r') as f:
-        settings = json.load(f)
-    return settings
 
 
 class GracefulShutdown:

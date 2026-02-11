@@ -10,7 +10,7 @@ from django.utils.dateparse import parse_datetime
 from datetime import date
 from .models import Recording
 from .forms import SettingsForm
-from scripts.pipeline import get_config
+from config_utils import get_config
 
 
 def index(request):
