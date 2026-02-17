@@ -8,6 +8,7 @@ import json
 import logging
 import django
 from SNR import SNR
+from scipy.io import wavfile
 from datetime import datetime
 
 
@@ -75,6 +76,16 @@ def process_file(input_file, settings):
     except subprocess.CalledProcessError as e:
         # Prints an error if processing fails
         logging.error('Failed to decode file ' + output_filename.replace('.wav', settings['file_ext']))
+        return
+
+    # Calculate the duration of the audio file
+    sample_rate, data = wavfile.read(output_filename)
+    duration_sec = data.shape[0] / sample_rate
+    if duration_sec < settings['min_audio_len']:
+        # Delete the file if it is too short
+        logging.info(f'Removing {os.path.basename(output_filename)}, too short. Audio duration: {duration_sec} s, min. duration: {settings["min_audio_len"]} s')
+        os.remove(input_file)
+        os.remove(output_filename)
         return
 
     snr = SNR(output_filename).get_snr()
