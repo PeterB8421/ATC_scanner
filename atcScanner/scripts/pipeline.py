@@ -58,6 +58,10 @@ def get_sec(filename):
 
 # Processes a new raw file
 def process_file(input_file, settings):
+    if os.path.getsize(input_file) == 0:
+        logging.info(f'File {os.path.basename(input_file)} is empty, deleting.')
+        os.remove(input_file)
+        return
     # Change output file name to wav audio file
     output_filename = input_file.split('/')[-1].replace(settings['file_ext'], '.wav')
     # Creates file path according to date of the file (taken from filename)
