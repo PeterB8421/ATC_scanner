@@ -1,4 +1,5 @@
 from django.db import models
+from django.urls import reverse
 
 
 class Recording(models.Model):
@@ -10,3 +11,11 @@ class Recording(models.Model):
     date = models.DateTimeField()
     snr = models.FloatField()
     duration = models.FloatField()
+
+    def get_absolute_url(self):
+        return reverse('detail', kwargs={
+            'year': self.date.strftime('%Y'),
+            'month': self.date.strftime('%m'),
+            'day': self.date.strftime('%d'),
+            'pk': self.pk
+        })

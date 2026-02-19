@@ -3,6 +3,7 @@ from . import views
 
 urlpatterns = [
     path('', views.index, name='index'),
+    path('api/get_recs', views.get_recs, name='get_recs'),
     path('settings/', views.settings, name='settings'),
     path('<str:year>/<str:month>/<str:day>/<int:pk>', views.detail, name='detail'),
     path('<str:year>/<str:month>/<str:day>/<str:fname>', views.detail, name='detail'),

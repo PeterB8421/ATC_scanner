@@ -29,6 +29,44 @@ def index(request):
     return render(request, 'index.html', {'recordings': recordings, 'years': years})
 
 
+def get_recs(request):
+    sort_key = request.GET.get('sort')
+    allowed_keys = {
+        'high_snr': 'snr',
+        'low_snr': '-snr',
+        'oldest': 'date',
+        'newest': '-date',
+        'shortest': 'duration',
+        'longest': '-duration',
+    }
+
+    if sort_key not in allowed_keys:
+        return JsonResponse({
+            'error': f'Invalid sort key: {sort_key}'
+        }, status=400)
+
+    sort = allowed_keys[sort_key]
+    recordings = Recording.objects.order_by(sort)[:20]
+    for rec in recordings:
+        rec.file_name = os.path.basename(rec.file_path)
+        rec.month_str = f'{rec.date.month:02d}'
+        rec.day_str = f'{rec.date.day:02d}'
+        rec.abs_url = rec.get_absolute_url()
+
+    data = []
+    for rec in recordings:
+        data.append({
+            'id': rec.id,
+            'file_path': rec.file_path,
+            'file_name': rec.file_name,
+            'date': rec.date,
+            'snr': rec.snr,
+            'abs_url': rec.abs_url,
+            'duration': rec.duration,
+        })
+    return JsonResponse(data, safe=False)
+
+
 def detail(request, year, month, day, fname=None, pk=None):
     if fname is None and pk is None:
         return HttpResponse('Incorrect URL', status=404)

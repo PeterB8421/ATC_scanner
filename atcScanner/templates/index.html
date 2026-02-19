@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}
 Homepage
@@ -7,6 +8,22 @@ Homepage
 {% block content %}
     <main class="container">
         <h1>ATC traffic processing pipeline</h1>
+        <h2>JS test</h2>
+        <table class="table table-striped" id="rec-table">
+            <thead>
+            <tr>
+                <th>File name</th>
+                <th>Audio</th>
+                <th>SNR</th>
+                <th>Duration</th>
+                <th>Date</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody id="rec-table-content">
+            </tbody>
+        </table>
+    
         <h2>Latest recordings</h2>
         {% if recordings %}
         <table class="table table-striped">
@@ -56,4 +73,8 @@ Homepage
             <p>There are no recordings yet.</p>
         {% endif %}
     </main>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{% static 'mainApp/js/index.js' %}"></script>
 {% endblock %}
