@@ -14,6 +14,8 @@ Homepage
             <tr>
                 <th>File name</th>
                 <th>Audio</th>
+                <th>SNR</th>
+                <th>Duration</th>
                 <th>Date</th>
                 <th></th>
             </tr>
@@ -28,6 +30,8 @@ Homepage
                         Your browser does not support the audio element.
                     </audio>
                 </td>
+                    <td>{{ recording.snr }}</td>
+                    <td>{{ recording.duration }} s</td>
                 <td>{{ recording.date }}</td>
                 <td><a class="btn btn-primary" href="{% url 'detail' recording.date.year recording.month_str recording.day_str recording.pk %}">Detail</a></td>
                 </tr>

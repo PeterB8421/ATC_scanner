@@ -107,6 +107,7 @@ def process_file(input_file, settings):
         'center_freq': settings['center_freq'],
         'airport_codes': settings['airport_codes'],
         'snr': snr,
+        'duration': duration_sec,
     }
     # Save JSON metadata next to wav file
     with open(output_filename.replace('.wav', '.json'), 'w') as f:
@@ -122,6 +123,7 @@ def process_file(input_file, settings):
             airport_codes=metadata['airport_codes'],
             date=rec_datetime,
             snr=metadata['snr'],
+            duration=metadata['duration'],
         )
         recording.save()
     except Exception as e:

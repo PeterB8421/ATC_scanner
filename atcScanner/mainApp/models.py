@@ -9,3 +9,4 @@ class Recording(models.Model):
     airport_codes = models.CharField(max_length=80)
     date = models.DateTimeField()
     snr = models.FloatField()
+    duration = models.FloatField()
