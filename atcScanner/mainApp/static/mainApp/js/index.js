@@ -1,4 +1,8 @@
+import WaveSurfer from 'https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.esm.js'
+import Spectrogram from 'https://unpkg.com/wavesurfer.js@7/dist/plugins/spectrogram.esm.js'
+
 function get_recs(sortKey){
+    // Get recordings via server API
     const url = `/api/get_recs?sort=${sortKey}`;
 
     fetch(url)
@@ -11,9 +15,8 @@ function get_recs(sortKey){
             return response.json();
         })
         .then(data => {
-            console.log(data) // DEBUG
-
             if(data.length === 0){
+                // When there are no data, let the user know
                 document.getElementById('rec-table').innerText = "There are no recordings yet.";
             }
             else{
@@ -21,10 +24,11 @@ function get_recs(sortKey){
                 tableEl.innerHTML = "";
 
                 const rows = data.map(rec => {
+                    // Create all rows at once, so the page does not have to re-render for each row
                     return `
                         <tr>
                             <td><a href="${rec.abs_url}">${rec.file_name}</a></td>
-                            <td> <audio controls><source src="${rec.file_path}"></audio> </td>
+                            <td> <audio class="rec-player" controls src="${rec.file_path}"></audio> <div class="spec" style="width: 100%;"></div> </td>
                             <td>${rec.snr}</td>
                             <td>${rec.duration} s</td>
                             <td>${rec.date}</td>
@@ -33,16 +37,35 @@ function get_recs(sortKey){
                     `;
                 }).join('');
                 tableEl.innerHTML = rows;
+
+                // Add spectrograms to each row
+                const audioEls = tableEl.querySelectorAll("tr");
+
+                audioEls.forEach(row => {
+                    const audioEl = row.querySelector(".rec-player");
+                    const container = row.querySelector(".spec");
+
+                    const ws = WaveSurfer.create({
+                        container: container,
+                        media: audioEl,
+                        height: 0, // Don't show the default waveform
+                        interact: false,
+                        plugins: [
+                            Spectrogram.create({
+                                labels: true,
+                                height: 60,
+                            }),
+                        ],
+                    })
+                })
             }
         })
         .catch(error => {
-            console.error('Failed to fetch recordings!')
-
             if(error.error){
-                console.error(`API error: ${error.error}`)
+                console.error(`API error: ${error.error}`);
             }
             else{
-                console.error('Network error occurred!')
+                console.error('Error drawing spectrograms!');
             }
         })
 }

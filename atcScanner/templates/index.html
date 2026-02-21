@@ -5,6 +5,10 @@
 Homepage
 {% endblock %}
 
+{% block css %}
+    <link rel="stylesheet" href="{% static 'mainApp/css/index.css' %}">
+{% endblock %}
+
 {% block content %}
     <main class="container">
         <h1>ATC traffic processing pipeline</h1>
@@ -21,6 +25,7 @@ Homepage
             </tr>
             </thead>
             <tbody id="rec-table-content">
+                <td>Loading...</td><td></td><td></td><td></td><td></td><td></td>
             </tbody>
         </table>
     
@@ -76,5 +81,5 @@ Homepage
 {% endblock %}
 
 {% block scripts %}
-    <script src="{% static 'mainApp/js/index.js' %}"></script>
+    <script type="module" src="{% static 'mainApp/js/index.js' %}"></script>
 {% endblock %}
