@@ -32,12 +32,12 @@ def index(request):
 def get_recs(request):
     sort_key = request.GET.get('sort')
     allowed_keys = {
-        'high_snr': 'snr',
-        'low_snr': '-snr',
-        'oldest': 'date',
-        'newest': '-date',
-        'shortest': 'duration',
-        'longest': '-duration',
+        'snr': 'snr',
+        '-snr': '-snr',
+        'date': 'date',
+        '-date': '-date',
+        'duration': 'duration',
+        '-duration': '-duration',
     }
 
     if sort_key not in allowed_keys:
@@ -90,6 +90,8 @@ def detail(request, year, month, day, fname=None, pk=None):
 
         recording = Recording(**kwargs)
         recording.file_name = fname
+    recording.metadata_file_path = recording.file_path.replace('.wav', '.json')
+    recording.metadata_file_name = os.path.basename(recording.file_name.replace('.wav', '.json'))
     return render(request, 'detail.html', {'recording': recording, 'year': year, 'month': month, 'day': day})
 
 

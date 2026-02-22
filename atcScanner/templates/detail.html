@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}
     {{ recording.file_name }}
@@ -19,10 +20,12 @@
 {% block content %}
     <main class="container">
         <h1>Recording detail</h1>
-        <audio controls>
-            <source src="{{ recording.file_path }}" type="audio/wav">
+        <audio id="rec-player" controls src="{{ recording.file_path }}">
             Your browser does not support the audio element.
         </audio>
+        <div id="graphs"></div>
+        <a href="{{ recording.file_path }}" download="{{ recording.file_name }}" class="btn btn-info">Download audio</a>
+        <a href="{{ recording.metadata_file_path }}" download="{{ recording.metadata_file_name }}" class="btn btn-secondary">Download metadata</a>
         <div class="row">
             <div class="col"><p class="fw-bold">File name</p></div>
             <div class="col">{{ recording.file_name }}</div>
@@ -56,4 +59,8 @@
             <div class="col">{{ recording.duration }} seconds</div>
         </div>
     </main>
+{% endblock %}
+
+{% block scripts %}
+    <script type="module" src="{% static 'mainApp/js/detail.js' %}"></script>
 {% endblock %}

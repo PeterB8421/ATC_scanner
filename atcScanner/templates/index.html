@@ -7,20 +7,21 @@ Homepage
 
 {% block css %}
     <link rel="stylesheet" href="{% static 'mainApp/css/index.css' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 {% endblock %}
 
 {% block content %}
     <main class="container">
         <h1>ATC traffic processing pipeline</h1>
-        <h2>JS test</h2>
+        <h2>Recordings</h2>
         <table class="table table-striped" id="rec-table">
             <thead>
             <tr>
                 <th>File name</th>
                 <th>Audio</th>
-                <th>SNR</th>
-                <th>Duration</th>
-                <th>Date</th>
+                <th class="sortable-header" data-sort="snr" style="cursor: pointer;">SNR <i class="bi bi-arrow-down-up text-muted"></i></th>
+                <th class="sortable-header" data-sort="duration" style="cursor: pointer;">Duration <i class="bi bi-arrow-down-up text-muted"></i></th>
+                <th class="sortable-header" data-sort="date" style="cursor: pointer;">Date <i class="bi bi-caret-down-fill"></i></th>
                 <th></th>
             </tr>
             </thead>
@@ -29,40 +30,40 @@ Homepage
             </tbody>
         </table>
     
-        <h2>Latest recordings</h2>
-        {% if recordings %}
-        <table class="table table-striped">
-            <thead>
-            <tr>
-                <th>File name</th>
-                <th>Audio</th>
-                <th>SNR</th>
-                <th>Duration</th>
-                <th>Date</th>
-                <th></th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for recording in recordings %}
-                <tr>
-                    <td><a href="{% url 'detail' recording.date.year recording.month_str recording.day_str recording.pk %}">{{ recording.file_name }}</a></td>
-                <td>
-                    <audio controls>
-                        <source src="{{ recording.file_path }}" type="audio/wav">
-                        Your browser does not support the audio element.
-                    </audio>
-                </td>
-                    <td>{{ recording.snr }}</td>
-                    <td>{{ recording.duration }} s</td>
-                <td>{{ recording.date }}</td>
-                <td><a class="btn btn-primary" href="{% url 'detail' recording.date.year recording.month_str recording.day_str recording.pk %}">Detail</a></td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-            <p>There are no recordings yet!</p>
-        {% endif %}
+{#        <h2>Latest recordings</h2>#}
+{#        {% if recordings %}#}
+{#        <table class="table table-striped">#}
+{#            <thead>#}
+{#            <tr>#}
+{#                <th>File name</th>#}
+{#                <th>Audio</th>#}
+{#                <th>SNR</th>#}
+{#                <th>Duration</th>#}
+{#                <th>Date</th>#}
+{#                <th></th>#}
+{#            </tr>#}
+{#            </thead>#}
+{#            <tbody>#}
+{#            {% for recording in recordings %}#}
+{#                <tr>#}
+{#                    <td><a href="{% url 'detail' recording.date.year recording.month_str recording.day_str recording.pk %}">{{ recording.file_name }}</a></td>#}
+{#                <td>#}
+{#                    <audio controls>#}
+{#                        <source src="{{ recording.file_path }}" type="audio/wav">#}
+{#                        Your browser does not support the audio element.#}
+{#                    </audio>#}
+{#                </td>#}
+{#                    <td>{{ recording.snr }}</td>#}
+{#                    <td>{{ recording.duration }} s</td>#}
+{#                <td>{{ recording.date }}</td>#}
+{#                <td><a class="btn btn-primary" href="{% url 'detail' recording.date.year recording.month_str recording.day_str recording.pk %}">Detail</a></td>#}
+{#                </tr>#}
+{#            {% endfor %}#}
+{#            </tbody>#}
+{#        </table>#}
+{#        {% else %}#}
+{#            <p>There are no recordings yet!</p>#}
+{#        {% endif %}#}
     
         <h2>All recordings</h2>
         <h3>Year</h3>

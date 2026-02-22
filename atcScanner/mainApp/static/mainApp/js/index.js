@@ -70,4 +70,44 @@ function get_recs(sortKey){
         })
 }
 
-get_recs('newest');
+get_recs('-date');
+
+
+// Keep track of the current state globally
+let currentSortColumn = 'date';
+let isDescending = true; // true = minus sign (e.g., -date)
+
+// 1. Grab all headers with the 'sortable-header' class
+const sortHeaders = document.querySelectorAll('.sortable-header');
+
+sortHeaders.forEach(header => {
+    header.addEventListener('click', () => {
+        // Clicked column to sort by
+        const clickedColumn = header.getAttribute('data-sort');
+
+        // Flip the arrow direction
+        if (currentSortColumn === clickedColumn) {
+            // Same column
+            isDescending = !isDescending;
+        } else {
+            // Different column
+            currentSortColumn = clickedColumn;
+            isDescending = true;
+        }
+
+        // Reset all icons to the neutral state
+        sortHeaders.forEach(h => {
+            const icon = h.querySelector('i');
+            icon.className = "bi bi-arrow-down-up text-muted";
+        });
+
+        // Highlight the active icon
+        const activeIcon = header.querySelector('i');
+        activeIcon.className = isDescending ? "bi bi-caret-down-fill" : "bi bi-caret-up-fill";
+
+        // Build the API string
+        const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
+
+        get_recs(apiSortKey);
+    });
+});
