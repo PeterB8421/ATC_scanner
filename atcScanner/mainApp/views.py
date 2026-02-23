@@ -2,11 +2,15 @@ import glob
 import json
 import os.path
 
+from pathlib import Path
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
 from django.utils.dateparse import parse_datetime
+from django.db import OperationalError
+from django.db.models import Count
+from django.db.models.functions import TruncDay
 from datetime import date
 from .models import Recording
 from .forms import SettingsForm
@@ -31,6 +35,7 @@ def index(request):
 
 def get_recs(request):
     sort_key = request.GET.get('sort')
+    filter_date = request.GET.get('filter_date')
     allowed_keys = {
         'snr': 'snr',
         '-snr': '-snr',
@@ -46,7 +51,13 @@ def get_recs(request):
         }, status=400)
 
     sort = allowed_keys[sort_key]
-    recordings = Recording.objects.order_by(sort)[:20]
+    recordings = Recording.objects.all()
+
+    if filter_date:
+        recordings = recordings.filter(date__date=filter_date)
+
+    recordings = recordings.order_by(sort)[:20]
+
     for rec in recordings:
         rec.file_name = os.path.basename(rec.file_path)
         rec.month_str = f'{rec.date.month:02d}'
@@ -65,6 +76,33 @@ def get_recs(request):
             'duration': rec.duration,
         })
     return JsonResponse(data, safe=False)
+
+
+def get_month_counts(request):
+    year = request.GET.get('year')
+    month = request.GET.get('month')
+
+    day_counts = {}
+
+    try:
+        recs = Recording.objects.filter(date__year=year, date__month=month).annotate(day=TruncDay('date')).values('day').annotate(count=Count('id'))
+
+        for rec in recs:
+            day_str = rec['day'].strftime('%Y-%m-%d')
+            day_counts[day_str] = rec['count']
+    except OperationalError:
+        # Fallback if there is db error
+        month_path = Path(f'/data/out/{year}/{month}')
+
+        if month_path.exists() and month_path.is_dir():
+            for day_dir in month_path.iterdir():
+                if day_dir.is_dir():
+                    file_count = len(list(day_dir.glob('*.wav')))
+                    if file_count > 0:
+                        date_key = f'{year}-{month}-{day_dir.name}'
+                        day_counts[date_key] = file_count
+
+    return JsonResponse(day_counts)
 
 
 def detail(request, year, month, day, fname=None, pk=None):

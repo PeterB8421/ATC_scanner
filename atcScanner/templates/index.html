@@ -14,7 +14,43 @@ Homepage
     <main class="container">
         <h1>ATC traffic processing pipeline</h1>
         <h2>Recordings</h2>
-        <table class="table table-striped" id="rec-table">
+        <div class="row justify-content-center mb-4">
+            <div class="col-md-10 col-lg-8">
+                
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <button id="prev-month" class="btn btn-outline-secondary btn-sm">&lt; Prev</button>
+                    <select id="month-select" class="form-select form-select-sm w-auto">
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3">March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">August</option>
+                        <option value="9">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                    
+                    <select id="year-select" class="form-select form-select-sm w-auto"></select>
+                    <button id="next-month" class="btn btn-outline-secondary btn-sm">Next &gt;</button>
+                </div>
+                
+                <div id="calendar-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; max-width: 600px; margin: 0 auto;"></div>
+                
+                <div class="text-center mt-3">
+                    <button id="clear-date" class="btn btn-warning btn-sm" style="display: none;">
+                        Clear Selection
+                    </button>
+                </div>
+                
+            </div>
+        </div>
+    
+        <p id="empty-message" style="display: none;">There are no recordings yet.</p>
+        <table class="table table-striped w-100 mt-2" id="rec-table">
             <thead>
             <tr>
                 <th>File name</th>
@@ -26,44 +62,11 @@ Homepage
             </tr>
             </thead>
             <tbody id="rec-table-content">
-                <td>Loading...</td><td></td><td></td><td></td><td></td><td></td>
+            <tr>
+                <td colspan="6">Loading...</td>
+            </tr>
             </tbody>
         </table>
-    
-{#        <h2>Latest recordings</h2>#}
-{#        {% if recordings %}#}
-{#        <table class="table table-striped">#}
-{#            <thead>#}
-{#            <tr>#}
-{#                <th>File name</th>#}
-{#                <th>Audio</th>#}
-{#                <th>SNR</th>#}
-{#                <th>Duration</th>#}
-{#                <th>Date</th>#}
-{#                <th></th>#}
-{#            </tr>#}
-{#            </thead>#}
-{#            <tbody>#}
-{#            {% for recording in recordings %}#}
-{#                <tr>#}
-{#                    <td><a href="{% url 'detail' recording.date.year recording.month_str recording.day_str recording.pk %}">{{ recording.file_name }}</a></td>#}
-{#                <td>#}
-{#                    <audio controls>#}
-{#                        <source src="{{ recording.file_path }}" type="audio/wav">#}
-{#                        Your browser does not support the audio element.#}
-{#                    </audio>#}
-{#                </td>#}
-{#                    <td>{{ recording.snr }}</td>#}
-{#                    <td>{{ recording.duration }} s</td>#}
-{#                <td>{{ recording.date }}</td>#}
-{#                <td><a class="btn btn-primary" href="{% url 'detail' recording.date.year recording.month_str recording.day_str recording.pk %}">Detail</a></td>#}
-{#                </tr>#}
-{#            {% endfor %}#}
-{#            </tbody>#}
-{#        </table>#}
-{#        {% else %}#}
-{#            <p>There are no recordings yet!</p>#}
-{#        {% endif %}#}
     
         <h2>All recordings</h2>
         <h3>Year</h3>
