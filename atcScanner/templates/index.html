@@ -49,6 +49,14 @@ Homepage
             </div>
         </div>
     
+        <div id="fallback-warning" class="alert alert-warning align-items-center mb-3" style="display: none;" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+            <div>
+                <strong>Database connection lost!</strong> 
+                Falling back to direct filesystem read.
+            </div>
+        </div>
+    
         <p id="empty-message" style="display: none;">There are no recordings yet.</p>
         <table class="table table-striped w-100 mt-2" id="rec-table">
             <thead>

@@ -18,6 +18,15 @@ function get_recs(sortKey, filter_date = null){
                     throw errorData;
                 })
             }
+
+            const isFallback = response.headers.get('X-Fallback-Mode') === 'true';
+            console.log("Fallback mode: ", isFallback);
+
+            const warnBanner = document.getElementById("fallback-warning");
+
+            if(warnBanner){
+                warnBanner.style.display = isFallback ? 'flex' : 'none';
+            }
             return response.json();
         })
         .then(data => {

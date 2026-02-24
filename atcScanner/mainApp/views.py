@@ -33,6 +33,83 @@ def index(request):
     return render(request, 'index.html', {'recordings': recordings, 'years': years})
 
 
+def _parse_json_files(json_files):
+    # Reads JSON metadata in case the db fails
+    parsed_data = []
+    for j_file in json_files:
+        try:
+            with open(j_file, 'r') as f:
+                meta = json.load(f)
+
+            d = parse_datetime(meta['date'])
+
+            abs_url = f"/{d.strftime('%Y/%m/%d')}/{os.path.basename(meta['file_path'])}"
+
+            parsed_data.append({
+                'id'       : None,  # No database ID exists
+                'file_path': meta['file_path'],
+                'file_name': os.path.basename(meta['file_path']),
+                'date'     : meta['date'],
+                'snr'      : meta['snr'],
+                'abs_url'  : abs_url,
+                'duration' : meta['duration'],
+            })
+        except (json.JSONDecodeError, FileNotFoundError):
+            continue
+    return parsed_data
+
+
+def get_recs_from_disk(filter_date, sort_key, limit=20):
+    # Read metadata files from disk in case of db error
+    base_path = Path('/data/out')
+    data = []
+
+    if not base_path.exists():
+        return data
+
+    # Filter by given date
+    if filter_date:
+        try:
+            year, month, day = filter_date.split('-')
+            target_path = base_path / year / month / day
+
+            if target_path.exists() and target_path.is_dir():
+                json_files = list(target_path.glob('*.json'))
+                data = _parse_json_files(json_files)
+        except ValueError:
+            pass  # Invalid date format
+
+    # If filter_date wasn't provided, get the day with most recent data
+    else:
+        # Get the newest year
+        years = sorted([d for d in base_path.iterdir() if d.is_dir()], key=lambda x: x.name, reverse=True)
+
+        if years:
+            newest_year = years[0]
+
+            # Get the newest Month
+            months = sorted([d for d in newest_year.iterdir() if d.is_dir()], key=lambda x: x.name, reverse=True)
+
+            if months:
+                newest_month = months[0]
+
+                # Get the newest Day
+                days = sorted([d for d in newest_month.iterdir() if d.is_dir()], key=lambda x: x.name, reverse=True)
+
+                if days:
+                    newest_day = days[0]
+
+                    json_files = list(newest_day.glob('*.json'))
+                    data = _parse_json_files(json_files)
+    reverse_sort = sort_key.startswith('-')
+    sort_field = sort_key.lstrip('-')
+
+    if sort_field in ['date', 'snr', 'duration']:
+        data.sort(key=lambda x: x.get(sort_field, 0) if x.get(sort_field) is not None else 0, reverse=reverse_sort)
+
+    return data[:limit]
+
+
 def get_recs(request):
     sort_key = request.GET.get('sort')
     filter_date = request.GET.get('filter_date')
@@ -51,31 +128,41 @@ def get_recs(request):
         }, status=400)
 
     sort = allowed_keys[sort_key]
-    recordings = Recording.objects.all()
+    try:
+        recordings = Recording.objects.all()
 
-    if filter_date:
-        recordings = recordings.filter(date__date=filter_date)
+        if filter_date:
+            recordings = recordings.filter(date__date=filter_date)
 
-    recordings = recordings.order_by(sort)[:20]
+        recordings = recordings.order_by(sort)[:20]
 
-    for rec in recordings:
-        rec.file_name = os.path.basename(rec.file_path)
-        rec.month_str = f'{rec.date.month:02d}'
-        rec.day_str = f'{rec.date.day:02d}'
-        rec.abs_url = rec.get_absolute_url()
+        for rec in recordings:
+            rec.file_name = os.path.basename(rec.file_path)
+            rec.month_str = f'{rec.date.month:02d}'
+            rec.day_str = f'{rec.date.day:02d}'
+            rec.abs_url = rec.get_absolute_url()
 
-    data = []
-    for rec in recordings:
-        data.append({
-            'id': rec.id,
-            'file_path': rec.file_path,
-            'file_name': rec.file_name,
-            'date': rec.date,
-            'snr': rec.snr,
-            'abs_url': rec.abs_url,
-            'duration': rec.duration,
-        })
-    return JsonResponse(data, safe=False)
+        data = []
+        for rec in recordings:
+            data.append({
+                'id': rec.id,
+                'file_path': rec.file_path,
+                'file_name': rec.file_name,
+                'date': rec.date,
+                'snr': rec.snr,
+                'abs_url': rec.abs_url,
+                'duration': rec.duration,
+            })
+        response = JsonResponse(data, safe=False)
+        response['X-Fallback-Mode'] = 'false'
+        return response
+
+    except OperationalError:
+        fallback_data = get_recs_from_disk(filter_date, sort_key, limit=20)
+
+        response = JsonResponse(fallback_data, safe=False)
+        response['X-Fallback-Mode'] = 'true'
+        return response
 
 
 def get_month_counts(request):

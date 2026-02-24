@@ -2,11 +2,11 @@
   "airport_codes": "LKTB",
   "center_freq": 124.5,
   "country": "Czech republic",
-  "file_ext": ".cf32",
+  "file_ext": ".cs16",
   "in_autodelete": false,
   "location": "49.25411,16.58154",
   "min_audio_len": 0,
-  "script_name": "decode_cf32.sh",
+  "script_name": "decode_cs16.sh",
   "sleep_time": 5,
   "snr_thres": -50.0
 }
