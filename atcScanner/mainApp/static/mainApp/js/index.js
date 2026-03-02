@@ -146,7 +146,7 @@ sortHeaders.forEach(header => {
         const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
 
         currentPage = 1;
-        get_recs(apiSortKey);
+        get_recs(apiSortKey, activeFilterDate);
     });
 });
 
