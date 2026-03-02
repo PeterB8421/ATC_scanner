@@ -1,11 +1,31 @@
 import WaveSurfer from 'https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.esm.js'
 import Spectrogram from 'https://unpkg.com/wavesurfer.js@7/dist/plugins/spectrogram.esm.js'
 
+/*
+Global variables
+ */
+// Keep track of the current state globally
+let currentSortColumn = 'date';
+let isDescending = true;
+
+// Get sortable headers
+const sortHeaders = document.querySelectorAll('.sortable-header');
+let activeFilterDate = null;
+
+// Update the Calendar Click Listener
+const calendarGrid = document.getElementById('calendar-grid');
+const clearButton = document.getElementById('clear-date');
+let currentPage = 1;
+
+/*
+Get recordings from backend
+ */
 function get_recs(sortKey, filter_date = null){
     // Get recordings via server API
     const url = new URL('/api/get_recs', window.location.origin);
 
     url.searchParams.append('sort', sortKey);
+    url.searchParams.append('page', currentPage.toString());
 
     if(filter_date){
         url.searchParams.append('filter_date', filter_date);
@@ -30,7 +50,7 @@ function get_recs(sortKey, filter_date = null){
             return response.json();
         })
         .then(data => {
-            if(data.length === 0){
+            if(data.data.length === 0){
                 // When there are no data, let the user know
                 document.getElementById('rec-table').style.display = "none";
                 document.getElementById('empty-message').style.display = "block";
@@ -41,7 +61,7 @@ function get_recs(sortKey, filter_date = null){
                 const tableEl = document.getElementById('rec-table-content');
                 tableEl.innerHTML = "";
 
-                const rows = data.map(rec => {
+                const rows = data.data.map(rec => {
                     // Create all rows at once, so the page does not have to re-render for each row
                     return `
                         <tr>
@@ -76,6 +96,11 @@ function get_recs(sortKey, filter_date = null){
                         ],
                     })
                 })
+                const pageStats = data.pagination;
+                document.getElementById('page-info').textContent = `Page ${pageStats.current_page} of ${pageStats.total_pages}`;
+                document.getElementById('prev-page').disabled = !pageStats.has_previous;
+                document.getElementById('next-page').disabled = !pageStats.has_next;
+                document.getElementById('total-recs').innerHTML = `Total recordings (with current filters): <b>${pageStats.total_recs}</b>`;
             }
         })
         .catch(error => {
@@ -88,17 +113,9 @@ function get_recs(sortKey, filter_date = null){
         })
 }
 
-get_recs('-date');
-
 /*
 Data sorting
  */
-// Keep track of the current state globally
-let currentSortColumn = 'date';
-let isDescending = true;
-
-// Get sortable headers
-const sortHeaders = document.querySelectorAll('.sortable-header');
 
 sortHeaders.forEach(header => {
     header.addEventListener('click', () => {
@@ -128,6 +145,7 @@ sortHeaders.forEach(header => {
         // Build the API string
         const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
 
+        currentPage = 1;
         get_recs(apiSortKey);
     });
 });
@@ -225,17 +243,6 @@ document.getElementById('next-month').addEventListener('click', () => {
     renderCalendar(currentYear, currentMonth);
 });
 
-// Load the initial calendar on page load
-renderCalendar(currentYear, currentMonth);
-
-
-
-let activeFilterDate = null;
-
-// Update the Calendar Click Listener
-const calendarGrid = document.getElementById('calendar-grid');
-const clearButton = document.getElementById('clear-date');
-
 calendarGrid.addEventListener('click', (event) => {
     const clickedDay = event.target.closest('.cal-day');
     if (!clickedDay) return;
@@ -252,6 +259,7 @@ calendarGrid.addEventListener('click', (event) => {
     clearButton.style.display = 'block';
 
     const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
+    currentPage = 1;
     get_recs(apiSortKey, activeFilterDate);
 });
 
@@ -268,5 +276,22 @@ clearButton.addEventListener('click', () => {
     clearButton.style.display = 'none';
 
     const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
+    currentPage = 1;
     get_recs(apiSortKey, null);
 });
+
+document.getElementById('prev-page').addEventListener('click', () => {
+    currentPage--;
+    const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
+    get_recs(apiSortKey, activeFilterDate);
+});
+
+document.getElementById('next-page').addEventListener('click', () => {
+    currentPage++;
+    const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
+    get_recs(apiSortKey, activeFilterDate);
+});
+
+// Load the initial calendar on page load
+renderCalendar(currentYear, currentMonth);
+get_recs('-date');

@@ -1,8 +1,10 @@
 import glob
 import json
 import os.path
+import math
 
 from pathlib import Path
+from django.core.paginator import Paginator
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -59,7 +61,7 @@ def _parse_json_files(json_files):
     return parsed_data
 
 
-def get_recs_from_disk(filter_date, sort_key, limit=20):
+def get_recs_from_disk(filter_date, sort_key):
     # Read metadata files from disk in case of db error
     base_path = Path('/data/out')
     data = []
@@ -107,12 +109,19 @@ def get_recs_from_disk(filter_date, sort_key, limit=20):
     if sort_field in ['date', 'snr', 'duration']:
         data.sort(key=lambda x: x.get(sort_field, 0) if x.get(sort_field) is not None else 0, reverse=reverse_sort)
 
-    return data[:limit]
+    return data
 
 
 def get_recs(request):
+    # API endpoint to retrieve recordings from db or disk
     sort_key = request.GET.get('sort')
     filter_date = request.GET.get('filter_date')
+
+    try:
+        page_nr = int(request.GET.get('page', 1))
+    except ValueError:
+        page_nr = 1
+
     allowed_keys = {
         'snr': 'snr',
         '-snr': '-snr',
@@ -134,7 +143,11 @@ def get_recs(request):
         if filter_date:
             recordings = recordings.filter(date__date=filter_date)
 
-        recordings = recordings.order_by(sort)[:20]
+        recordings = recordings.order_by(sort)
+        total_recs = len(recordings)
+
+        paginator = Paginator(recordings, 20)
+        page_obj = paginator.get_page(page_nr)
 
         for rec in recordings:
             rec.file_name = os.path.basename(rec.file_path)
@@ -143,7 +156,7 @@ def get_recs(request):
             rec.abs_url = rec.get_absolute_url()
 
         data = []
-        for rec in recordings:
+        for rec in page_obj.object_list:
             data.append({
                 'id': rec.id,
                 'file_path': rec.file_path,
@@ -153,14 +166,46 @@ def get_recs(request):
                 'abs_url': rec.abs_url,
                 'duration': rec.duration,
             })
-        response = JsonResponse(data, safe=False)
+
+        response_data = {
+            'data': data,
+            'pagination': {
+                'current_page': page_obj.number,
+                'total_pages': paginator.num_pages,
+                'has_next': page_obj.has_next(),
+                'has_previous': page_obj.has_previous(),
+                'total_recs': total_recs,
+            }
+        }
+        response = JsonResponse(response_data, safe=False)
         response['X-Fallback-Mode'] = 'false'
         return response
 
     except OperationalError:
-        fallback_data = get_recs_from_disk(filter_date, sort_key, limit=20)
+        fallback_data = get_recs_from_disk(filter_date, sort_key)
 
-        response = JsonResponse(fallback_data, safe=False)
+        total_items = len(fallback_data)
+        total_pages = math.ceil(total_items / 20) if total_items > 0 else 1
+
+        if page_nr < 1: page_nr = 1
+        if page_nr > total_pages: page_nr = total_pages
+
+        start_idx = (page_nr - 1) * 20
+        end_idx = start_idx + 20
+        paged_data = fallback_data[start_idx:end_idx]
+
+        response_data = {
+            'data'      : paged_data,
+            'pagination': {
+                'current_page': page_nr,
+                'total_pages' : total_pages,
+                'has_next'    : page_nr < total_pages,
+                'has_previous': page_nr > 1,
+                'total_recs' : total_items,
+            }
+        }
+
+        response = JsonResponse(response_data, safe=False)
         response['X-Fallback-Mode'] = 'true'
         return response
 
