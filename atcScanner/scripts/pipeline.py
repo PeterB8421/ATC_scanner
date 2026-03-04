@@ -88,6 +88,13 @@ def process_file(input_file, settings):
         os.remove(output_filename)
         return
 
+    if duration_sec > settings['max_audio_len'] and settings['max_audio_len'] != 0:
+        # Delete file if it is too long
+        logging.info(f'Removing {os.path.basename(output_filename)}, too long. Audio duration: {duration_sec} s, max. duration: {settings["max_audio_len"]} s')
+        os.remove(input_file)
+        os.remove(output_filename)
+        return
+
     snr = SNR(output_filename).get_snr()
     # Delete automatically if there is too much noise
     if snr < settings['snr_thres']:

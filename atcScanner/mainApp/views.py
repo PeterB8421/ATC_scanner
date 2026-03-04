@@ -301,6 +301,11 @@ def settings(request):
     elif request.method == "POST":
         form = SettingsForm(request.POST)
         if form.is_valid():
+            print(type(form.cleaned_data['min_audio_len']))
+            print(type(form.cleaned_data['max_audio_len']))
+            if form.cleaned_data['min_audio_len'] > form.cleaned_data['max_audio_len']:
+                messages.error(request, 'Minimum audio length must be lower than maximum audio length')
+                return render(request, 'settings.html', {"form": form})
             if form.cleaned_data['file_ext'] == '.cs16':
                 form.cleaned_data['script_name'] = 'decode_cs16.sh'
             elif form.cleaned_data['file_ext'] == '.cf32':

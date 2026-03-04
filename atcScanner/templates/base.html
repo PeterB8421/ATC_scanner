@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    {% load static %}
+    <link rel="icon" type="image/png" href="{% static 'mainApp/img/favicon.png' %}">
     <title>ATC pipeline | {% block title %} {% endblock %}</title>
     {% load django_bootstrap5 %}
     {% bootstrap_css %}
