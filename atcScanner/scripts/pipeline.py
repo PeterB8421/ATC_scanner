@@ -7,10 +7,15 @@ import signal
 import json
 import logging
 import django
+import plugins
+from BaseProcessor import get_plugin
 from SNR import SNR
 from scipy.io import wavfile
 from datetime import datetime
 
+ACTIVE_PLUGINS = {
+    "whisper_asr": {}
+}
 
 # Import shared config function
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -135,6 +140,16 @@ def process_file(input_file, settings):
         recording.save()
     except Exception as e:
         logging.error(f'Failed to save recording to database: {str(e)}')
+
+    loaded_plugins = []
+    for plugin_name, plugin_config in ACTIVE_PLUGINS.items():
+        loaded_plugins.append(get_plugin(plugin_name, plugin_config))
+
+    for plugin in loaded_plugins:
+        try:
+            plugin.process(output_filename)
+        except Exception as e:
+            logging.error(f"Plugin '{plugin.__class__.__name__} failed: {e}")
 
     if settings['in_autodelete']:
         # Delete raw file
