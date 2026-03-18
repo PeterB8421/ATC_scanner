@@ -11,6 +11,7 @@ class Recording(models.Model):
     date = models.DateTimeField()
     snr = models.FloatField()
     duration = models.FloatField()
+    transcript = models.TextField()
 
     def get_absolute_url(self):
         return reverse('detail', kwargs={

@@ -7,14 +7,16 @@ import signal
 import json
 import logging
 import django
-import plugins
+import plugins  # This import is needed to register plugins from plugins.py
 from BaseProcessor import get_plugin
 from SNR import SNR
 from scipy.io import wavfile
 from datetime import datetime
 
 ACTIVE_PLUGINS = {
-    "whisper_asr": {}
+    "whisper_asr": {
+        "url": "http://host.docker.internal:11000"
+    }
 }
 
 # Import shared config function
@@ -120,6 +122,7 @@ def process_file(input_file, settings):
         'airport_codes': settings['airport_codes'],
         'snr': snr,
         'duration': duration_sec,
+        'transcript': "[Processing...]",
     }
     # Save JSON metadata next to wav file
     with open(output_filename.replace('.wav', '.json'), 'w') as f:
@@ -136,19 +139,23 @@ def process_file(input_file, settings):
             date=rec_datetime,
             snr=metadata['snr'],
             duration=metadata['duration'],
+            transcript=metadata['transcript'],
         )
         recording.save()
     except Exception as e:
         logging.error(f'Failed to save recording to database: {str(e)}')
 
     loaded_plugins = []
+    # Get all loaded plugins specified in ACTIVE_PLUGINS
     for plugin_name, plugin_config in ACTIVE_PLUGINS.items():
         loaded_plugins.append(get_plugin(plugin_name, plugin_config))
 
     for plugin in loaded_plugins:
         try:
+            # Run each plugin
             plugin.process(output_filename)
         except Exception as e:
+            # Log an error if one occurred
             logging.error(f"Plugin '{plugin.__class__.__name__} failed: {e}")
 
     if settings['in_autodelete']:

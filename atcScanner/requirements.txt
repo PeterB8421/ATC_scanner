@@ -9,3 +9,6 @@ django-bootstrap5
 numpy~=2.2.6
 scipy~=1.15.3
 onnxruntime
+requests
+httpx
+aiofiles
