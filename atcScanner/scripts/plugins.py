@@ -22,10 +22,14 @@ class WhisperASR(BaseProcessor):
                 response = requests.post(self.config["url"] + "/transcribe/", files=files)
                 response.raise_for_status()  # Check for HTTP errors
         except FileNotFoundError:
-            print(f"Error: File not found: '{file_path}'.")
+            logging.error(f"Error: File not found: '{file_path}'.")
+            asyncio.run(self._update_json_transcript(file_path, FAIL_TEXT))
+            asyncio.run(self._update_database_transcript(file_path, FAIL_TEXT))
             return
         except requests.exceptions.RequestException as e:
-            print(f"Error connecting to the API: {e}")
+            logging.error(f"Error connecting to the API: {e}")
+            asyncio.run(self._update_json_transcript(file_path, FAIL_TEXT))
+            asyncio.run(self._update_database_transcript(file_path, FAIL_TEXT))
             return
 
         data = response.json()
