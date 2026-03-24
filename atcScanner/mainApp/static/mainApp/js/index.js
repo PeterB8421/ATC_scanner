@@ -62,6 +62,13 @@ function get_recs(sortKey, filter_date = null){
                 tableEl.innerHTML = "";
 
                 const rows = data.data.map(rec => {
+                    let transcriptClass = "";
+                    if(rec.transcript === "[Processing...]"){
+                        transcriptClass = "table-info";
+                    }
+                    else if(rec.transcript === "[Transcription failed]"){
+                        transcriptClass = "table-danger";
+                    }
                     // Create all rows at once, so the page does not have to re-render for each row
                     return `
                         <tr>
@@ -70,6 +77,7 @@ function get_recs(sortKey, filter_date = null){
                             <td>${rec.snr}</td>
                             <td>${rec.duration} s</td>
                             <td>${rec.date}</td>
+                            <td class="${transcriptClass}"><div class="text-truncate" style="max-width: 250px; cursor: help" title="${rec.transcript}">${rec.transcript}</div></td>
                             <td><a class="btn btn-primary" href="${rec.abs_url}">Detail</a></td>
                         </tr>
                     `;
@@ -290,6 +298,30 @@ document.getElementById('next-page').addEventListener('click', () => {
     currentPage++;
     const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
     get_recs(apiSortKey, activeFilterDate);
+});
+
+// Event listener for data refresh button
+document.getElementById('reload-table-btn').addEventListener('click', async function() {
+    const btn = this;
+    const originalText = btn.innerHTML;
+
+    btn.disabled = true;
+    btn.innerHTML = `
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        Refreshing...
+    `;
+
+    try {
+        const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
+        await get_recs(apiSortKey, activeFilterDate);
+
+    } catch (error) {
+        console.error("Error reloading table data:", error);
+        alert("Failed to refresh data. Please try again.");
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
 });
 
 // Load the initial calendar on page load

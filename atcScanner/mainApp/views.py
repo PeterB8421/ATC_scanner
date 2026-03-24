@@ -165,6 +165,7 @@ def get_recs(request):
                 'snr': rec.snr,
                 'abs_url': rec.abs_url,
                 'duration': rec.duration,
+                'transcript': rec.transcript,
             })
 
         response_data = {

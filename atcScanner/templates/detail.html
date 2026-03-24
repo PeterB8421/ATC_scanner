@@ -58,6 +58,10 @@
             <div class="col"><p class="fw-bold">Duration</p></div>
             <div class="col">{{ recording.duration }} seconds</div>
         </div>
+        <div class="row">
+            <div class="col"><p class="fw-bold">Transcript</p></div>
+            <div class="col {% if recording.transcript == "[Processing...]" %} bg-info {% elif recording.transcript == "[Transcription failed]" %} bg-danger {% endif %}">{{ recording.transcript }}</div>
+        </div>
     </main>
 {% endblock %}
 

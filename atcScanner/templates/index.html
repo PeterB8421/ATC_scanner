@@ -59,6 +59,11 @@ Homepage
     
         <p id="empty-message" style="display: none;">There are no recordings yet.</p>
         <p id="total-recs">Total recordings (with current filters): <b>0</b></p>
+        <div class="d-flex justify-content-end mb-3">
+            <button id="reload-table-btn" class="btn btn-outline-secondary shadow-sm">
+                Refresh Data
+            </button>
+        </div>
         <table class="table table-striped w-100 mt-2" id="rec-table">
             <thead>
             <tr>
@@ -67,6 +72,7 @@ Homepage
                 <th class="sortable-header" data-sort="snr" style="cursor: pointer;">SNR <i class="bi bi-arrow-down-up text-muted"></i></th>
                 <th class="sortable-header" data-sort="duration" style="cursor: pointer;">Duration <i class="bi bi-arrow-down-up text-muted"></i></th>
                 <th class="sortable-header" data-sort="date" style="cursor: pointer;">Date <i class="bi bi-caret-down-fill"></i></th>
+                <th>Transcript</th>
                 <th></th>
             </tr>
             </thead>
