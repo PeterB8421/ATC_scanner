@@ -12,12 +12,96 @@ from asgiref.sync import sync_to_async
 FAIL_TEXT = "[Transcription failed]"
 
 
+@register_plugin("whisper_asr_webhook")
+class WhisperASRWebhook(BaseProcessor):
+    """
+    Class for processing audio files using ASR API in a different Docker container (ATC_transcriber) included in this project.
+    This class uses a webhook to save resulting transcription. Transcription is saved using function receive_transcription(request) in views.py.
+
+    This code only sends the file from pipeline, Django endpoint handles metadata update. Metadata is updated only in case of an error.
+    """
+    def process(self, file_path: str):
+        logging.debug("Using webhook method")
+        try:
+            with open(file_path, "rb") as audio_file:
+                # Sending file as multipart/form-data
+                files = {"file": (file_path, audio_file, "audio/wav")}
+                data = {"webhook_url": "http://host.docker.internal:10000/api/transcript"}
+                response = requests.post(self.config["url"] + "/transcribe/", files=files, data=data)
+                response.raise_for_status()  # Check for HTTP errors
+        except FileNotFoundError:
+            logging.error(f"Error: File not found: '{file_path}'.")
+            self._update_json_transcript(file_path, FAIL_TEXT)
+            self._update_database_transcript(file_path, FAIL_TEXT)
+            return
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error connecting to the API: {e}")
+            self._update_json_transcript(file_path, FAIL_TEXT)
+            self._update_database_transcript(file_path, FAIL_TEXT)
+            return
+
+        data = response.json()
+        job_id = data.get("job_id")
+        status = data.get("status")
+
+        from django.db import close_old_connections
+        close_old_connections()
+        try:
+            from mainApp.models import Transcripts
+            if job_id:
+                Transcripts.objects.create(file_path=file_path, job_id=job_id, status=status)
+        except Exception as e:
+            logging.error(f'Error updating database: {e}')
+        finally:
+            close_old_connections()
+
+    def _update_json_transcript(self, file_path: str, text: str):
+        """Update metadata JSON file"""
+        json_path = file_path.replace(".wav", ".json")
+        try:
+            with open(json_path, mode="r") as json_file:
+                content = json_file.read()
+                metadata = json.loads(content)
+
+            metadata['transcript'] = text
+
+            with open(json_path, mode="w") as json_file:
+                updated_content = json.dumps(metadata, indent=2, sort_keys=True)
+                json_file.write(updated_content)
+
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            logging.error(f"Failed to async update JSON for {file_path}: {e}")
+
+    def _update_database_transcript(self, file_path: str, text: str):
+        """Update text in database"""
+        from django.db import close_old_connections
+        close_old_connections()
+        try:
+            from mainApp.models import Recording
+            rows_updated = Recording.objects.filter(file_path=file_path).update(transcript=text)
+
+            if rows_updated == 0:
+                logging.warning(f"No database record found for '{file_path}'.")
+
+        except Exception as e:
+            logging.error(f"Failed to update database entry for {file_path}: {e}")
+        finally:
+            close_old_connections()
+
+
 @register_plugin("whisper_asr")
 class WhisperASR(BaseProcessor):
+    """
+    Class for processing audio files using ASR API in a different Docker container (ATC_transcriber) included in this project.
+    This class uses polling to save resulting transcription. Transcription is saved after returned status from API server is 'completed' (or 'failed').
+
+    This code sends a file to API, then spawn async thread which periodically polls the API for transcription status.
+    After polled status is 'completed' (or 'failed'), the thread updates both the DB and JSON file metadata with received transcription.
+    """
     def process(self, file_path: str):
         try:
             with open(file_path, "rb") as audio_file:
-                # We must send it as multipart/form-data, matching FastAPI's UploadFile
+                # Sending file as multipart/form-data
                 files = {"file": (file_path, audio_file, "audio/wav")}
                 response = requests.post(self.config["url"] + "/transcribe/", files=files)
                 response.raise_for_status()  # Check for HTTP errors

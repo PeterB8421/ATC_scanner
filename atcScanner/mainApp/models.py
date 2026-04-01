@@ -20,3 +20,9 @@ class Recording(models.Model):
             'day': self.date.strftime('%d'),
             'pk': self.pk
         })
+
+
+class Transcripts(models.Model):
+    file_path = models.FilePathField()
+    job_id = models.CharField(max_length=100)
+    status = models.CharField(max_length=50)

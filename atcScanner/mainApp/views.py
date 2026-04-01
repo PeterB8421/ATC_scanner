@@ -1,5 +1,6 @@
 import glob
 import json
+import logging
 import os.path
 import math
 
@@ -8,13 +9,14 @@ from django.core.paginator import Paginator
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.utils.dateparse import parse_datetime
 from django.db import OperationalError
 from django.db.models import Count
 from django.db.models.functions import TruncDay
 from datetime import date
-from .models import Recording
+from .models import Recording, Transcripts
 from .forms import SettingsForm
 from config_utils import get_config
 
@@ -322,3 +324,57 @@ def settings(request):
             return render(request, 'settings.html', {"form": form})
     else:
         return HttpResponse("Method Not Allowed", status=400)
+
+
+@csrf_exempt
+@require_POST
+def receive_transcription(request):
+    try:
+        data = json.loads(request.body)
+
+        job_id = data.get('job_id')
+        status = data.get('status')
+        text = data.get('text')
+
+        if not job_id:
+            return JsonResponse({"error": "Missing job id"}, status=400)
+
+        try:
+            transcript_record = Transcripts.objects.get(job_id=job_id)
+            file_path = transcript_record.file_path
+        except Transcripts.DoesNotExist:
+            return JsonResponse({"error": "Job id not found in DB"}, status=400)
+
+        transcript_record.status = status
+        transcript_record.save()
+
+        if status == "completed":
+            final_text = text
+        else:
+            final_text = "[Transcription failed]"
+
+        Recording.objects.filter(file_path=file_path).update(transcript=final_text)
+
+        json_path = file_path.replace('.wav', '.json')
+        try:
+            if os.path.exists(json_path):
+                with open(json_path, "r") as f:
+                    metadata = json.load(f)
+
+                metadata['transcript'] = final_text
+
+                with open(json_path, "w") as f:
+                    json.dump(metadata, f, indent=2, sort_keys=True)
+            else:
+                logging.warning(f'JSON metadata file missing for "{file_path}"')
+        except Exception as e:
+            logging.error(f"Failed to write metadata for webhook: {e}")
+
+        logging.info("Webhook transcript processed successfully")
+        return JsonResponse({"message": "File processed successfully"}, status=200)
+    except json.JSONDecodeError:
+        logging.error("Received invalid JSON payload")
+        return JsonResponse({"error": "Invalid JSON payload"}, status=400)
+    except Exception as e:
+        logging.error(f"Error occurred while processing transcript: {e}")
+        return JsonResponse({"error": "Internal server error"}, status=500)

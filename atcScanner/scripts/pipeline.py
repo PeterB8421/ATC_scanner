@@ -14,7 +14,12 @@ from scipy.io import wavfile
 from datetime import datetime
 
 ACTIVE_PLUGINS = {
-    "whisper_asr": {
+    # ASR API polling plugin
+    # "whisper_asr": {
+    #     "url": "http://host.docker.internal:11000"
+    # },
+    # ASR API webhook plugin
+    "whisper_asr_webhook": {
         "url": "http://host.docker.internal:11000"
     }
 }
