@@ -9,9 +9,9 @@
     <nav aria-label="breadcrumb" class="container">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'index' %}">Homepage</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'year' year %}">{{ year }}</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'month' year month %}">{{ month }}</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'day' year month day %}">{{ day }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'index' %}?year={{ year }}">{{ year }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'index' %}?year={{ year }}&month={{ month }}">{{ month }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'index' %}?year={{ year }}&month={{ month }}&date={{ recording.date|date:"Y-m-d" }}">{{ day }}</a></li>
             <li class="breadcrumb-item" aria-current="page">{{ recording.file_name }}</li>
         </ol>
     </nav>

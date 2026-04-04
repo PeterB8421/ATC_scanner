@@ -189,7 +189,7 @@ yearSelect.addEventListener('change', (e) => {
     renderCalendar(currentYear, currentMonth);
 });
 
-async function renderCalendar(year, month) {
+async function renderCalendar(year, month, selectedDay = null) {
     const grid = document.getElementById('calendar-grid');
     grid.innerHTML = ''; // Clear existing calendar
 
@@ -229,8 +229,10 @@ async function renderCalendar(year, month) {
             ? `<br><span class="badge bg-success">${count}</span>`
             : '<br><span class="badge bg-secondary">0</span>';
 
+        const highlightClass = (dateString === selectedDay) ? "bg-primary text-white" : "";
+
         grid.innerHTML += `
-            <div class="cal-day" data-date="${dateString}">
+            <div class="cal-day ${highlightClass}" data-date="${dateString}">
                 <strong>${day}</strong>
                 ${badgeHtml}
             </div>
@@ -322,8 +324,23 @@ document.getElementById('reload-table-btn').addEventListener('click', async func
         btn.innerHTML = originalText;
         btn.disabled = false;
     }
+    renderCalendar(currentYear, currentMonth, activeFilterDate);
 });
 
 // Load the initial calendar on page load
-renderCalendar(currentYear, currentMonth);
-get_recs('-date');
+const urlParams = new URLSearchParams(window.location.search);
+const targetDate = urlParams.get('date');
+const targetYear = urlParams.get('year');
+const targetMonth = urlParams.get('month');
+if(targetDate){
+    activeFilterDate = targetDate;
+    clearButton.style.display = 'block';
+}
+if(targetYear){
+    currentYear = targetYear;
+}
+if(targetMonth){
+    currentMonth = targetMonth;
+}
+renderCalendar(currentYear, currentMonth, activeFilterDate);
+get_recs('-date', activeFilterDate);
