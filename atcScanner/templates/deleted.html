@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}
+    Deleted recordings log
+{% endblock %}
+
+{% block breadcrumbs %}
+    <nav aria-label="breadcrumb" class="container">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Homepage</a></li>
+            <li class="breadcrumb-item" aria-current="page">Deleted files log</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    <main class="container">
+        <h1>Log of deleted files</h1>
+        <table class="table table-striped w-100 mt-2">
+            <tr>
+                <th>File path</th>
+                <th>Reason</th>
+                <th>SNR</th>
+                <th>Duration</th>
+                <th>Date and time</th>
+            </tr>
+            {% for deleted_rec in deleted_records %}
+                <tr>
+                    <td>{{ deleted_rec.file_path }}</td>
+                    <td>{{ deleted_rec.get_reason_display }}</td>
+                    <td>{{ deleted_rec.snr|default_if_none:"-" }}</td>
+                    <td>{{ deleted_rec.duration|default_if_none:"-" }}</td>
+                    <td>{{ deleted_rec.date }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    </main>
+{% endblock %}

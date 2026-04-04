@@ -16,7 +16,7 @@ from django.db import OperationalError
 from django.db.models import Count
 from django.db.models.functions import TruncDay
 from datetime import date
-from .models import Recording, Transcripts
+from .models import Recording, Transcripts, Deleted
 from .forms import SettingsForm
 from config_utils import get_config
 
@@ -324,6 +324,11 @@ def settings(request):
             return render(request, 'settings.html', {"form": form})
     else:
         return HttpResponse("Method Not Allowed", status=400)
+
+
+def deleted_log(request):
+    deleted_records = Deleted.objects.all().order_by('date')
+    return render(request, 'deleted.html', {"deleted_records": deleted_records})
 
 
 @csrf_exempt

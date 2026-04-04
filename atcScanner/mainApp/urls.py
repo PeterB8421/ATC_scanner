@@ -7,6 +7,7 @@ urlpatterns = [
     path('api/month_counts', views.get_month_counts, name='get_month_counts'),
     path('api/transcript', views.receive_transcription, name='receive_transcription'),
     path('settings/', views.settings, name='settings'),
+    path('deleted_log/', views.deleted_log, name='deleted_log'),
     path('<str:year>/<str:month>/<str:day>/<int:pk>', views.detail, name='detail'),
     path('<str:year>/<str:month>/<str:day>/<str:fname>', views.detail, name='detail'),
     path('<str:year>/<str:month>/<str:day>', views.day, name='day'),

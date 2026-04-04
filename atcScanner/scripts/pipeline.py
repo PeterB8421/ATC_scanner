@@ -69,10 +69,27 @@ def get_sec(filename):
     return part[-2:]
 
 
+def log_deletion(file_path, reason, settings, duration=None, snr=None):
+    from mainApp.models import Deleted
+    Deleted.objects.create(
+        file_path=file_path,
+        reason=reason,
+        snr_thres=settings['snr_thres'],
+        short_limit=settings['min_audio_len'],
+        long_limit=settings['max_audio_len'],
+        date=datetime.now(),
+        duration=duration,
+        snr=snr
+    )
+
+
 # Processes a new raw file
 def process_file(input_file, settings):
+    from mainApp.models import Recording, Deleted
+    reason = Deleted.DeletionReason
     if os.path.getsize(input_file) == 0:
         logging.info(f'File {os.path.basename(input_file)} is empty, deleting.')
+        log_deletion(input_file, reason.EMPTY_FILE, settings)
         os.remove(input_file)
         return
     # Change output file name to wav audio file
@@ -96,6 +113,7 @@ def process_file(input_file, settings):
     if duration_sec < settings['min_audio_len']:
         # Delete the file if it is too short
         logging.info(f'Removing {os.path.basename(output_filename)}, too short. Audio duration: {duration_sec} s, min. duration: {settings["min_audio_len"]} s')
+        log_deletion(input_file, reason.TOO_SHORT, settings, duration=duration_sec)
         os.remove(input_file)
         os.remove(output_filename)
         return
@@ -103,6 +121,7 @@ def process_file(input_file, settings):
     if duration_sec > settings['max_audio_len'] and settings['max_audio_len'] != 0:
         # Delete file if it is too long
         logging.info(f'Removing {os.path.basename(output_filename)}, too long. Audio duration: {duration_sec} s, max. duration: {settings["max_audio_len"]} s')
+        log_deletion(input_file, reason.TOO_LONG, settings, duration=duration_sec)
         os.remove(input_file)
         os.remove(output_filename)
         return
@@ -111,6 +130,7 @@ def process_file(input_file, settings):
     # Delete automatically if there is too much noise
     if snr < settings['snr_thres']:
         logging.info(f'Removing {output_filename} SNR = {snr}, thres = {settings["snr_thres"]}')
+        log_deletion(input_file, reason.SNR, settings, duration_sec, snr)
         os.remove(output_filename)
         os.remove(input_file)
         return
@@ -200,14 +220,13 @@ def main():
     # Do Django setup, without this, saving to database won't work
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'atcScanner.settings')
     django.setup()
-    global Recording # Expose Recording class as global for data insertion
-    from mainApp.models import Recording
+
     logging.info('Pipeline started')
-    # Path with raw transmission files
-    raw_files_path = '/data/in'
-    logging.info('raw_file_paths: ' + raw_files_path)
+    # Path with input transmission files
+    input_files_path = '/data/in'
+    logging.info('input_file_path: ' + input_files_path)
     # Check if the path exists
-    if not os.path.exists(raw_files_path):
+    if not os.path.exists(input_files_path):
         logging.critical('Raw files path does not exist!')
 
     settings = get_config()
@@ -228,7 +247,7 @@ def main():
 
         if elapsed_time_sec >= settings['sleep_time']:
             elapsed_time_sec = 0
-            raw_files = glob.glob(os.path.join(raw_files_path,  '*' + settings['file_ext']))
+            raw_files = glob.glob(os.path.join(input_files_path,  '*' + settings['file_ext']))
             logging.info('Raw files: ' + str(raw_files))
             for f in raw_files:
                 process_file(f, settings)

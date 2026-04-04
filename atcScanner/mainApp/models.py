@@ -1,5 +1,6 @@
 from django.db import models
 from django.urls import reverse
+from django.utils.translation import gettext_lazy as _
 
 
 class Recording(models.Model):
@@ -26,3 +27,21 @@ class Transcripts(models.Model):
     file_path = models.FilePathField()
     job_id = models.CharField(max_length=100)
     status = models.CharField(max_length=50)
+
+
+class Deleted(models.Model):
+    class DeletionReason(models.TextChoices):
+        EMPTY_FILE = 'empty_file', _('Empty file')
+        SNR = 'snr', _('SNR threshold')
+        TOO_SHORT = 'short', _('Audio too short')
+        TOO_LONG = 'long', _('Audio too long')
+        USER = 'user', _('User deleted')
+        UNK = 'unk', _('Unknown')
+    file_path = models.FilePathField()
+    reason = models.CharField(max_length=30, choices=DeletionReason.choices, default=DeletionReason.UNK)
+    snr_thres = models.FloatField()
+    short_limit = models.FloatField()
+    long_limit = models.FloatField()
+    date = models.DateTimeField()
+    duration = models.FloatField(blank=True, null=True)
+    snr = models.FloatField(blank=True, null=True)
