@@ -13,8 +13,8 @@ from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.utils.dateparse import parse_datetime
 from django.db import OperationalError
-from django.db.models import Count
 from django.db.models.functions import TruncDay
+from django.db.models import Count, Avg
 from datetime import date
 from .models import Recording, Transcripts, Deleted
 from .forms import SettingsForm
@@ -383,3 +383,75 @@ def receive_transcription(request):
     except Exception as e:
         logging.error(f"Error occurred while processing transcript: {e}")
         return JsonResponse({"error": "Internal server error"}, status=500)
+
+
+def stats(request):
+    return render(request, "stats.html")
+
+
+def get_stats(request):
+    # ---------------------------------------------------------
+    # 1. RECORDINGS PER DAY & AVERAGE SNR
+    # ---------------------------------------------------------
+    # Truncate the datetime to just the day, then group and calculate
+    daily_stats = (
+        Recording.objects
+        .annotate(day=TruncDay('date'))
+        .values('day')
+        .annotate(
+            total_count=Count('id'),
+            avg_snr=Avg('snr')
+        )
+        .order_by('day')
+    )
+
+    # Format for charting libraries (they love separate arrays for labels and data)
+    dates_label = []
+    volume_data = []
+    snr_data = []
+
+    for stat in daily_stats:
+        if stat['day']:  # Ensure date isn't null
+            dates_label.append(stat['day'].strftime('%Y-%m-%d'))
+            volume_data.append(stat['total_count'])
+            # Round SNR to 2 decimal places, default to 0 if None
+            snr_data.append(round(stat['avg_snr'], 2) if stat['avg_snr'] else 0)
+
+    # ---------------------------------------------------------
+    # 2. DELETION REASONS BREAKDOWN
+    # ---------------------------------------------------------
+    deletion_stats = (
+        Deleted.objects
+        .values('reason')
+        .annotate(count=Count('id'))
+        .order_by('-count')  # Sort highest to lowest
+    )
+
+    deletion_labels = []
+    deletion_data = []
+
+    # Map the raw database values back to the human-readable strings
+    # using the TextChoices class you created!
+    reason_dict = dict(Deleted.DeletionReason.choices)
+
+    for stat in deletion_stats:
+        raw_reason = stat['reason']
+        human_readable = reason_dict.get(raw_reason, "Unknown")
+
+        deletion_labels.append(str(human_readable))
+        deletion_data.append(stat['count'])
+
+    # ---------------------------------------------------------
+    # 3. RETURN AS A UNIFIED JSON RESPONSE
+    # ---------------------------------------------------------
+    return JsonResponse({
+        "timeline": {
+            "labels": dates_label,
+            "volume": volume_data,
+            "snr": snr_data
+        },
+        "deletions": {
+            "labels": deletion_labels,
+            "data": deletion_data
+        }
+    })
