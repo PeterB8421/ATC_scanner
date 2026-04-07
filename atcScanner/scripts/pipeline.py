@@ -230,7 +230,6 @@ def main():
         logging.critical('Raw files path does not exist!')
 
     settings = get_config()
-    sleep_time = settings['sleep_time']
 
     terminator = GracefulShutdown()
 
@@ -238,12 +237,12 @@ def main():
 
     elapsed_time_sec = 0
     # Periodically check if there are any new files, exit if requested
-    while not terminator.exit_needed and not terminator.restart:
-        # If settings were changed, restart pipeline
+    while not terminator.exit_needed:
+        # If settings were changed, reload pipeline settings
         if os.path.exists(restart_flag):
-            logging.info('Restart signal received')
+            logging.info('Reloading settings')
             os.remove(restart_flag)
-            terminator.set_restart()
+            settings = get_config()
 
         if elapsed_time_sec >= settings['sleep_time']:
             elapsed_time_sec = 0
@@ -255,11 +254,7 @@ def main():
         time.sleep(1)
         elapsed_time_sec += 1
 
-    if terminator.restart:
-        logging.info('Restarting pipeline')
-        exit(2)
-    else:
-        logging.info('Pipeline terminated')
+    logging.info('Pipeline terminated')
 
 
 if __name__ == '__main__':
