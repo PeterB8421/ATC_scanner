@@ -331,6 +331,61 @@ def deleted_log(request):
     return render(request, 'deleted.html', {"deleted_records": deleted_records})
 
 
+def get_del_log(request):
+    try:
+        page_nr = int(request.GET.get('page', 1))
+    except ValueError:
+        page_nr = 1
+
+    reason_filter = request.GET.get('reason')
+
+    delete_log = Deleted.objects.all().order_by('-date')
+    if reason_filter:
+        delete_log = delete_log.filter(reason=reason_filter)
+    paginator = Paginator(delete_log, 100)
+    page_obj = paginator.get_page(page_nr)
+
+    data = []
+    for d in page_obj.object_list:
+        data.append({
+            'id'        : d.id,
+            'file_path' : d.file_path,
+            'reason'    : d.reason,
+            'reason_text': str(d.get_reason_display()),
+            'snr_thres' : d.snr_thres,
+            'short_limit': d.short_limit,
+            'long_limit': d.long_limit,
+            'date'      : d.date,
+            'duration'  : d.duration,
+            'snr'       : d.snr,
+        })
+
+    response_data = {
+        'data'      : data,
+        'pagination': {
+            'current_page': page_obj.number,
+            'total_pages' : paginator.num_pages,
+            'has_next'    : page_obj.has_next(),
+            'has_previous': page_obj.has_previous(),
+            'total_recs'  : len(delete_log),
+        }
+    }
+    response = JsonResponse(response_data, safe=False)
+    return response
+
+
+def get_deletion_reasons(request):
+    reasons_list = []
+
+    for value, label in Deleted.DeletionReason.choices:
+        reasons_list.append({
+            "value": value,
+            "label": str(label)
+        })
+
+    return JsonResponse({"reasons": reasons_list})
+
+
 @csrf_exempt
 @require_POST
 def receive_transcription(request):
@@ -390,10 +445,7 @@ def stats(request):
 
 
 def get_stats(request):
-    # ---------------------------------------------------------
-    # 1. RECORDINGS PER DAY & AVERAGE SNR
-    # ---------------------------------------------------------
-    # Truncate the datetime to just the day, then group and calculate
+    # RECORDINGS PER DAY & AVERAGE SNR
     daily_stats = (
         Recording.objects
         .annotate(day=TruncDay('date'))
@@ -405,7 +457,7 @@ def get_stats(request):
         .order_by('day')
     )
 
-    # Format for charting libraries (they love separate arrays for labels and data)
+    # Format for charting libraries
     dates_label = []
     volume_data = []
     snr_data = []
@@ -417,9 +469,7 @@ def get_stats(request):
             # Round SNR to 2 decimal places, default to 0 if None
             snr_data.append(round(stat['avg_snr'], 2) if stat['avg_snr'] else 0)
 
-    # ---------------------------------------------------------
-    # 2. DELETION REASONS BREAKDOWN
-    # ---------------------------------------------------------
+    # DELETION REASONS BREAKDOWN
     deletion_stats = (
         Deleted.objects
         .values('reason')
@@ -431,7 +481,6 @@ def get_stats(request):
     deletion_data = []
 
     # Map the raw database values back to the human-readable strings
-    # using the TextChoices class you created!
     reason_dict = dict(Deleted.DeletionReason.choices)
 
     for stat in deletion_stats:
@@ -441,9 +490,7 @@ def get_stats(request):
         deletion_labels.append(str(human_readable))
         deletion_data.append(stat['count'])
 
-    # ---------------------------------------------------------
-    # 3. RETURN AS A UNIFIED JSON RESPONSE
-    # ---------------------------------------------------------
+    # RETURN AS A UNIFIED JSON RESPONSE
     return JsonResponse({
         "timeline": {
             "labels": dates_label,
