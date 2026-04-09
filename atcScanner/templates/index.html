@@ -64,6 +64,28 @@ Homepage
                 Refresh Data
             </button>
         </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card shadow-sm">
+                    <div class="card-body" style="position: relative; height: 200px; width: 100%;">
+                        <h5 class="card-title">Average SNR for selected month</h5>
+                        <canvas id="monthlyChart"></canvas>
+                        <div id="empty-message-month">There are no recordings for this month.</div>
+                    </div>
+                </div>
+            </div>
+    
+            <div class="col-md-6">
+                <div class="card shadow-sm">
+                    <div class="card-body" style="position: relative; height: 200px; width: 100%;">
+                        <h5 class="card-title">Average SNR per hour for selected day</h5>
+                        <canvas id="dailyChart"></canvas>
+                        <div id="empty-message-day">There are no recordings for this day.</div>
+                        <div id="not-selected-message">No day is currently selected.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <table class="table table-striped w-100 mt-2" id="rec-table">
             <thead>
             <tr>
@@ -105,5 +127,6 @@ Homepage
 {% endblock %}
 
 {% block scripts %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module" src="{% static 'mainApp/js/index.js' %}"></script>
 {% endblock %}

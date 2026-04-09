@@ -17,6 +17,9 @@ const calendarGrid = document.getElementById('calendar-grid');
 const clearButton = document.getElementById('clear-date');
 let currentPage = 1;
 
+let monthlyChart = null;
+let dailyChart = null;
+
 /*
 Get recordings from backend
  */
@@ -119,6 +122,94 @@ function get_recs(sortKey, filter_date = null){
                 console.error('Error drawing spectrograms: ', error);
             }
         })
+}
+
+async function loadMonthlyChart(year, month) {
+    const response = await fetch(`/api/get_monthly_snr?year=${year}&month=${month}`);
+    const data = await response.json();
+
+    const ctx = document.getElementById('monthlyChart').getContext('2d');
+    const emptyMsg = document.getElementById('empty-message-month');
+
+    // Destroy previous chart instance if it exists
+    if (monthlyChart) monthlyChart.destroy();
+
+    if(data.labels.length === 0){
+        document.getElementById('monthlyChart').style.display = "none";
+        emptyMsg.style.display = "block";
+    }
+    else{
+        document.getElementById('monthlyChart').style.display = "block";
+        emptyMsg.style.display = "none";
+    }
+
+    monthlyChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.labels,
+            datasets: [{
+                label: 'Avg SNR (dB)',
+                data: data.data,
+                backgroundColor: 'rgba(13, 110, 253, 0.7)', // Bootstrap Primary
+                borderColor: '#0d6efd',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+}
+
+// 3. Fetch and render Daily/Hourly Chart
+async function loadDailyChart(date) {
+    if(!date){
+        document.getElementById('dailyChart').style.display = "none";
+        document.getElementById('empty-message-day').style.display = "none";
+        document.getElementById('not-selected-message').style.display = "block";
+        return;
+    }
+    document.getElementById('not-selected-message').style.display = "none";
+    const response = await fetch(`/api/get_daily_snr?date=${date}`);
+    const data = await response.json();
+
+    const ctx = document.getElementById('dailyChart').getContext('2d');
+    const emptyMsg = document.getElementById('empty-message-day');
+
+    // Destroy previous chart instance if it exists
+    if (dailyChart) dailyChart.destroy();
+
+    if(data.labels.length === 0){
+        document.getElementById('dailyChart').style.display = "none";
+        emptyMsg.style.display = "block";
+    }
+    else{
+        document.getElementById('dailyChart').style.display = "block";
+        emptyMsg.style.display = "none";
+    }
+
+    dailyChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.labels,
+            datasets: [{
+                label: 'Avg SNR (dB)',
+                data: data.data,
+                borderColor: '#198754', // Bootstrap Success Green
+                backgroundColor: 'rgba(25, 135, 84, 0.2)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3 // Smooth curves
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true } }
+        }
+    });
 }
 
 /*
@@ -245,12 +336,14 @@ document.getElementById('prev-month').addEventListener('click', () => {
     currentMonth--;
     if (currentMonth < 1) { currentMonth = 12; currentYear--; }
     renderCalendar(currentYear, currentMonth);
+    loadMonthlyChart(currentYear, currentMonth);
 });
 
 document.getElementById('next-month').addEventListener('click', () => {
     currentMonth++;
     if (currentMonth > 12) { currentMonth = 1; currentYear++; }
     renderCalendar(currentYear, currentMonth);
+    loadMonthlyChart(currentYear, currentMonth);
 });
 
 calendarGrid.addEventListener('click', (event) => {
@@ -258,6 +351,7 @@ calendarGrid.addEventListener('click', (event) => {
     if (!clickedDay) return;
 
     activeFilterDate = clickedDay.getAttribute('data-date');
+    loadDailyChart(activeFilterDate);
 
     // Highlight the clicked day
     document.querySelectorAll('.cal-day').forEach(day => {
@@ -276,6 +370,7 @@ calendarGrid.addEventListener('click', (event) => {
 // Update the Clear Button Listener
 clearButton.addEventListener('click', () => {
     activeFilterDate = null;
+    loadDailyChart(activeFilterDate);
 
     // Remove highlight from all calendar days
     document.querySelectorAll('.cal-day').forEach(day => {
@@ -342,5 +437,31 @@ if(targetYear){
 if(targetMonth){
     currentMonth = targetMonth;
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Set input default values
+    const monthSelector = document.getElementById('month-select');
+    const yearSelector = document.getElementById('year-select');
+
+    // Load initial charts
+    loadMonthlyChart(yearSelector.value, monthSelector.value);
+    if(activeFilterDate){
+        loadDailyChart(activeFilterDate);
+    }
+    else{
+        document.getElementById('not-selected-message').style.display = "block";
+        document.getElementById('empty-message-day').style.display = "none";
+        document.getElementById('dailyChart').style.display = "none";
+    }
+
+    // 5. Add Event Listeners for when the user changes the dates
+    monthSelector.addEventListener('change', (e) => {
+        loadMonthlyChart(currentYear, currentMonth);
+    });
+
+    yearSelector.addEventListener('change', (e) => {
+        loadMonthlyChart(currentYear, currentMonth);
+    });
+});
 renderCalendar(currentYear, currentMonth, activeFilterDate);
 get_recs('-date', activeFilterDate);

@@ -13,9 +13,9 @@ from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.utils.dateparse import parse_datetime
 from django.db import OperationalError
-from django.db.models.functions import TruncDay
+from django.db.models.functions import TruncDay, TruncHour
 from django.db.models import Count, Avg
-from datetime import date
+from datetime import datetime
 from .models import Recording, Transcripts, Deleted
 from .forms import SettingsForm
 from config_utils import get_config
@@ -35,6 +35,53 @@ def index(request):
         if os.path.isdir(full) and len(name) == 4 and name.isdigit():
             years.append(name)
     return render(request, 'index.html', {'recordings': recordings, 'years': years})
+
+
+def get_monthly_snr(request):
+    year = request.GET.get('year', datetime.now().year)
+    month = request.GET.get('month', datetime.now().month)
+
+    daily_stats = (
+        Recording.objects.filter(date__year=year, date__month=month)
+        .annotate(day=TruncDay('date'))
+        .values('day')
+        .annotate(avg_snr=Avg('snr'))
+        .order_by('day')
+    )
+
+    labels = []
+    data = []
+    for stat in daily_stats:
+        if stat['day'] and stat['avg_snr'] is not None:
+            labels.append(stat['day'].strftime('%d %b'))
+            data.append(round(stat['avg_snr'], 2))
+
+    return JsonResponse({'labels': labels, 'data': data})
+
+
+def get_daily_snr(request):
+    date = request.GET.get('date')
+    date = parse_datetime(date)
+    year = date.year
+    month = date.month
+    day = date.day
+
+    hourly_stats = (
+        Recording.objects.filter(date__year=year, date__month=month, date__day=day)
+        .annotate(hour=TruncHour('date'))
+        .values('hour')
+        .annotate(avg_snr=Avg('snr'))
+        .order_by('hour')
+    )
+
+    labels = []
+    data = []
+    for stat in hourly_stats:
+        if stat['hour'] and stat['avg_snr'] is not None:
+            labels.append(stat['hour'].strftime('%H:00'))
+            data.append(round(stat['avg_snr'], 2))
+
+    return JsonResponse({"labels": labels, "data": data})
 
 
 def _parse_json_files(json_files):
