@@ -10,28 +10,40 @@ let isDescending = true;
 
 // Get sortable headers
 const sortHeaders = document.querySelectorAll('.sortable-header');
+// Day filter
 let activeFilterDate = null;
+// Hour filter
+let activeFilterHour = null;
 
 // Update the Calendar Click Listener
 const calendarGrid = document.getElementById('calendar-grid');
 const clearButton = document.getElementById('clear-date');
 let currentPage = 1;
 
+// Graphs for average SNR
 let monthlyChart = null;
 let dailyChart = null;
+
+// Fallback mode flag, if true, there are problems with database and data is read directly from system disk
+let isFallback = false;
 
 /*
 Get recordings from backend
  */
-function get_recs(sortKey, filter_date = null){
+function get_recs(sortKey){
     // Get recordings via server API
     const url = new URL('/api/get_recs', window.location.origin);
+    let filter_date = activeFilterDate; // Filter by selected date (null if not selected)
+    let filter_hour = activeFilterHour; // Filter by selected hour (null if not selected)
 
     url.searchParams.append('sort', sortKey);
     url.searchParams.append('page', currentPage.toString());
 
     if(filter_date){
         url.searchParams.append('filter_date', filter_date);
+    }
+    if(filter_hour){
+        url.searchParams.append('filter_hour', filter_hour);
     }
 
     fetch(url)
@@ -42,8 +54,15 @@ function get_recs(sortKey, filter_date = null){
                 })
             }
 
-            const isFallback = response.headers.get('X-Fallback-Mode') === 'true';
+            isFallback = response.headers.get('X-Fallback-Mode') === 'true';
             console.log("Fallback mode: ", isFallback);
+            if(isFallback){
+                document.getElementById('dailyChart').style.display = "none";
+                document.getElementById('empty-message-day').style.display = "none";
+                document.getElementById('not-selected-message').style.display = "none";
+                document.getElementById('fallback-message-month').style.display = "block";
+                document.getElementById('fallback-message-day').style.display = "block";
+            }
 
             const warnBanner = document.getElementById("fallback-warning");
 
@@ -59,6 +78,12 @@ function get_recs(sortKey, filter_date = null){
                 document.getElementById('empty-message').style.display = "block";
             }
             else{
+                if(isFallback){
+                    activeFilterDate = data.data[0].date.split("T")[0];
+                    currentYear = activeFilterDate.split("-")[0];
+                    currentMonth = activeFilterDate.split("-")[1];
+                    renderCalendar(currentYear, currentMonth, activeFilterDate);
+                }
                 document.getElementById('rec-table').style.display = "block";
                 document.getElementById('empty-message').style.display = "none";
                 const tableEl = document.getElementById('rec-table-content');
@@ -75,7 +100,7 @@ function get_recs(sortKey, filter_date = null){
                     // Create all rows at once, so the page does not have to re-render for each row
                     return `
                         <tr>
-                            <td><a href="${rec.abs_url}">${rec.file_name}</a></td>
+                            <td><a href="${rec.abs_url}"><i class="bi bi-soundwave"></i>${rec.file_name}</a></td>
                             <td> <audio class="rec-player" controls src="${rec.file_path}"></audio> <div class="spec" style="width: 100%;"></div> </td>
                             <td>${rec.snr}</td>
                             <td>${rec.duration} s</td>
@@ -125,11 +150,33 @@ function get_recs(sortKey, filter_date = null){
 }
 
 async function loadMonthlyChart(year, month) {
+    if(isFallback){
+        document.getElementById('monthlyChart').style.display = "none";
+        document.getElementById('empty-message-month').style.display = "none";
+        document.getElementById('not-selected-message').style.display = "none";
+        document.getElementById('fallback-message-month').style.display = "block";
+        return;
+    }
+    document.getElementById('fallback-message-month').style.display = "none";
     const response = await fetch(`/api/get_monthly_snr?year=${year}&month=${month}`);
     const data = await response.json();
 
+    isFallback = response.headers.get('X-Fallback-Mode') === 'true';
+    console.log("Fallback mode: ", isFallback);
+    if(isFallback){
+        document.getElementById('monthlyChart').style.display = "none";
+        document.getElementById('empty-message-month').style.display = "none";
+        document.getElementById('not-selected-message').style.display = "none";
+        document.getElementById('fallback-message-month').style.display = "block";
+        document.getElementById('fallback-message-day').style.display = "block";
+        return;
+    }
+
     const ctx = document.getElementById('monthlyChart').getContext('2d');
     const emptyMsg = document.getElementById('empty-message-month');
+    const selectedMonth = document.getElementById('month-select').selectedOptions[0].text;
+    const selectedYear = document.getElementById('year-select').selectedOptions[0].text;
+    document.getElementById('selectedMonthText').innerHTML = `${selectedMonth} ${selectedYear}`;
 
     // Destroy previous chart instance if it exists
     if (monthlyChart) monthlyChart.destroy();
@@ -165,6 +212,14 @@ async function loadMonthlyChart(year, month) {
 
 // 3. Fetch and render Daily/Hourly Chart
 async function loadDailyChart(date) {
+    if(isFallback){
+        document.getElementById('dailyChart').style.display = "none";
+        document.getElementById('empty-message-day').style.display = "none";
+        document.getElementById('not-selected-message').style.display = "none";
+        document.getElementById('fallback-message-day').style.display = "block";
+        return;
+    }
+    document.getElementById('fallback-message-day').style.display = "none";
     if(!date){
         document.getElementById('dailyChart').style.display = "none";
         document.getElementById('empty-message-day').style.display = "none";
@@ -172,8 +227,20 @@ async function loadDailyChart(date) {
         return;
     }
     document.getElementById('not-selected-message').style.display = "none";
+    document.getElementById('selectedDayText').innerHTML = date;
     const response = await fetch(`/api/get_daily_snr?date=${date}`);
     const data = await response.json();
+
+    isFallback = response.headers.get('X-Fallback-Mode') === 'true';
+    console.log("Fallback mode: ", isFallback);
+    if(isFallback){
+        document.getElementById('dailyChart').style.display = "none";
+        document.getElementById('empty-message-day').style.display = "none";
+        document.getElementById('not-selected-message').style.display = "none";
+        document.getElementById('fallback-message-month').style.display = "block";
+        document.getElementById('fallback-message-day').style.display = "block";
+        return;
+    }
 
     const ctx = document.getElementById('dailyChart').getContext('2d');
     const emptyMsg = document.getElementById('empty-message-day');
@@ -245,7 +312,7 @@ sortHeaders.forEach(header => {
         const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
 
         currentPage = 1;
-        get_recs(apiSortKey, activeFilterDate);
+        get_recs(apiSortKey);
     });
 });
 
@@ -352,6 +419,8 @@ calendarGrid.addEventListener('click', (event) => {
 
     activeFilterDate = clickedDay.getAttribute('data-date');
     loadDailyChart(activeFilterDate);
+    document.getElementById('selected-day-message').style.display = "flex";
+    document.getElementById('selectedDay').innerHTML = `${activeFilterDate}`;
 
     // Highlight the clicked day
     document.querySelectorAll('.cal-day').forEach(day => {
@@ -364,12 +433,15 @@ calendarGrid.addEventListener('click', (event) => {
 
     const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
     currentPage = 1;
-    get_recs(apiSortKey, activeFilterDate);
+    get_recs(apiSortKey);
 });
 
 // Update the Clear Button Listener
 clearButton.addEventListener('click', () => {
     activeFilterDate = null;
+    activeFilterHour = null;
+    document.getElementById('selectedDayText').innerHTML = "selected day";
+    document.getElementById('selected-day-message').style.display = "none";
     loadDailyChart(activeFilterDate);
 
     // Remove highlight from all calendar days
@@ -382,19 +454,19 @@ clearButton.addEventListener('click', () => {
 
     const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
     currentPage = 1;
-    get_recs(apiSortKey, null);
+    get_recs(apiSortKey);
 });
 
 document.getElementById('prev-page').addEventListener('click', () => {
     currentPage--;
     const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
-    get_recs(apiSortKey, activeFilterDate);
+    get_recs(apiSortKey);
 });
 
 document.getElementById('next-page').addEventListener('click', () => {
     currentPage++;
     const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
-    get_recs(apiSortKey, activeFilterDate);
+    get_recs(apiSortKey);
 });
 
 // Event listener for data refresh button
@@ -410,7 +482,7 @@ document.getElementById('reload-table-btn').addEventListener('click', async func
 
     try {
         const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
-        await get_recs(apiSortKey, activeFilterDate);
+        await get_recs(apiSortKey);
 
     } catch (error) {
         console.error("Error reloading table data:", error);
@@ -420,6 +492,25 @@ document.getElementById('reload-table-btn').addEventListener('click', async func
         btn.disabled = false;
     }
     renderCalendar(currentYear, currentMonth, activeFilterDate);
+});
+
+document.getElementById('time-filter').addEventListener('change', async function() {
+
+    try {
+        let selectedHour = document.getElementById('time-filter').value;
+        if(selectedHour === ""){
+            activeFilterHour = null;
+        }
+        else{
+            activeFilterHour = selectedHour;
+        }
+        const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
+        await get_recs(apiSortKey);
+
+    } catch (error) {
+        console.error("Error loading table data:", error);
+        alert("Failed to refresh data. Please try again.");
+    }
 });
 
 // Load the initial calendar on page load
@@ -438,6 +529,9 @@ if(targetMonth){
     currentMonth = targetMonth;
 }
 
+renderCalendar(currentYear, currentMonth, activeFilterDate);
+get_recs('-date');
+
 document.addEventListener('DOMContentLoaded', () => {
     // Set input default values
     const monthSelector = document.getElementById('month-select');
@@ -447,6 +541,8 @@ document.addEventListener('DOMContentLoaded', () => {
     loadMonthlyChart(yearSelector.value, monthSelector.value);
     if(activeFilterDate){
         loadDailyChart(activeFilterDate);
+        document.getElementById('selected-day-message').style.display = "flex";
+        document.getElementById('selectedDay').innerHTML = `${activeFilterDate}`;
     }
     else{
         document.getElementById('not-selected-message').style.display = "block";
@@ -463,5 +559,3 @@ document.addEventListener('DOMContentLoaded', () => {
         loadMonthlyChart(currentYear, currentMonth);
     });
 });
-renderCalendar(currentYear, currentMonth, activeFilterDate);
-get_recs('-date', activeFilterDate);

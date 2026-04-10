@@ -38,50 +38,65 @@ def index(request):
 
 
 def get_monthly_snr(request):
-    year = request.GET.get('year', datetime.now().year)
-    month = request.GET.get('month', datetime.now().month)
+    try:
+        year = request.GET.get('year', datetime.now().year)
+        month = request.GET.get('month', datetime.now().month)
 
-    daily_stats = (
-        Recording.objects.filter(date__year=year, date__month=month)
-        .annotate(day=TruncDay('date'))
-        .values('day')
-        .annotate(avg_snr=Avg('snr'))
-        .order_by('day')
-    )
+        daily_stats = (
+            Recording.objects.filter(date__year=year, date__month=month)
+            .annotate(day=TruncDay('date'))
+            .values('day')
+            .annotate(avg_snr=Avg('snr'))
+            .order_by('day')
+        )
 
-    labels = []
-    data = []
-    for stat in daily_stats:
-        if stat['day'] and stat['avg_snr'] is not None:
-            labels.append(stat['day'].strftime('%d %b'))
-            data.append(round(stat['avg_snr'], 2))
+        labels = []
+        data = []
+        for stat in daily_stats:
+            if stat['day'] and stat['avg_snr'] is not None:
+                labels.append(stat['day'].strftime('%d %b'))
+                data.append(round(stat['avg_snr'], 2))
+        response = JsonResponse({'labels': labels, 'data': data})
+        response['X-Fallback-Mode'] = 'false'
+    except OperationalError:
+        labels = []
+        data = []
+        response = JsonResponse({'labels': labels, 'data': data})
+        response['X-Fallback-Mode'] = 'true'
 
-    return JsonResponse({'labels': labels, 'data': data})
+    return response
 
 
 def get_daily_snr(request):
-    date = request.GET.get('date')
-    date = parse_datetime(date)
-    year = date.year
-    month = date.month
-    day = date.day
+    try:
+        date = request.GET.get('date')
+        date = parse_datetime(date)
+        year = date.year
+        month = date.month
+        day = date.day
 
-    hourly_stats = (
-        Recording.objects.filter(date__year=year, date__month=month, date__day=day)
-        .annotate(hour=TruncHour('date'))
-        .values('hour')
-        .annotate(avg_snr=Avg('snr'))
-        .order_by('hour')
-    )
+        hourly_stats = (
+            Recording.objects.filter(date__year=year, date__month=month, date__day=day)
+            .annotate(hour=TruncHour('date'))
+            .values('hour')
+            .annotate(avg_snr=Avg('snr'))
+            .order_by('hour')
+        )
 
-    labels = []
-    data = []
-    for stat in hourly_stats:
-        if stat['hour'] and stat['avg_snr'] is not None:
-            labels.append(stat['hour'].strftime('%H:00'))
-            data.append(round(stat['avg_snr'], 2))
-
-    return JsonResponse({"labels": labels, "data": data})
+        labels = []
+        data = []
+        for stat in hourly_stats:
+            if stat['hour'] and stat['avg_snr'] is not None:
+                labels.append(stat['hour'].strftime('%H:00'))
+                data.append(round(stat['avg_snr'], 2))
+        response = JsonResponse({"labels": labels, "data": data})
+        response['X-Fallback-Mode'] = 'false'
+    except OperationalError:
+        labels = []
+        data = []
+        response = JsonResponse({"labels": labels, "data": data})
+        response['X-Fallback-Mode'] = 'true'
+    return response
 
 
 def _parse_json_files(json_files):
@@ -104,6 +119,7 @@ def _parse_json_files(json_files):
                 'snr'      : meta['snr'],
                 'abs_url'  : abs_url,
                 'duration' : meta['duration'],
+                'transcript': meta['transcript'],
             })
         except (json.JSONDecodeError, FileNotFoundError):
             continue
@@ -165,6 +181,7 @@ def get_recs(request):
     # API endpoint to retrieve recordings from db or disk
     sort_key = request.GET.get('sort')
     filter_date = request.GET.get('filter_date')
+    filter_hour = request.GET.get('filter_hour')
 
     try:
         page_nr = int(request.GET.get('page', 1))
@@ -187,10 +204,13 @@ def get_recs(request):
 
     sort = allowed_keys[sort_key]
     try:
+        raise OperationalError
         recordings = Recording.objects.all()
 
         if filter_date:
             recordings = recordings.filter(date__date=filter_date)
+        if filter_hour:
+            recordings = recordings.filter(date__hour=filter_hour)
 
         recordings = recordings.order_by(sort)
         total_recs = len(recordings)
@@ -306,6 +326,8 @@ def detail(request, year, month, day, fname=None, pk=None):
             'airport_codes': metadata['airport_codes'],
             'date': parse_datetime(metadata['date']),
             'snr': metadata['snr'],
+            'duration': metadata['duration'],
+            'transcript': metadata['transcript'],
         }
 
         recording = Recording(**kwargs)

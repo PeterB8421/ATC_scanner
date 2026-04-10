@@ -12,8 +12,7 @@ Homepage
 
 {% block content %}
     <main class="container">
-        <h1>ATC traffic processing pipeline</h1>
-        <h2>Recordings</h2>
+        <h1>ATC communication processing pipeline</h1>
         <div class="row justify-content-center mb-4">
             <div class="col-md-10 col-lg-8">
                 
@@ -45,7 +44,41 @@ Homepage
                         Clear Selection
                     </button>
                 </div>
-                
+                <div class="row" id="selected-day-message" style="display: none;">
+                    <p class="col-md-6">Selected day: <b id="selectedDay"></b></p>
+                    <div class="col-md-4">
+                        <span class="input-group-text bg-transparent border-0" id="filter-icon">
+                                <i class="bi bi-funnel"></i> Filter by hour:
+                            </span>
+                            <select id="time-filter" class="form-select bg-transparent" aria-describedby="filter-icon">
+                                <option value="">-</option>
+                                <option value="00">00:00 - 01:00</option>
+                                <option value="01">01:00 - 02:00</option>
+                                <option value="02">02:00 - 03:00</option>
+                                <option value="03">03:00 - 04:00</option>
+                                <option value="04">04:00 - 05:00</option>
+                                <option value="05">05:00 - 06:00</option>
+                                <option value="06">06:00 - 07:00</option>
+                                <option value="07">07:00 - 08:00</option>
+                                <option value="08">08:00 - 09:00</option>
+                                <option value="09">09:00 - 10:00</option>
+                                <option value="10">10:00 - 11:00</option>
+                                <option value="11">11:00 - 12:00</option>
+                                <option value="12">12:00 - 13:00</option>
+                                <option value="13">13:00 - 14:00</option>
+                                <option value="14">14:00 - 15:00</option>
+                                <option value="15">15:00 - 16:00</option>
+                                <option value="16">16:00 - 17:00</option>
+                                <option value="17">17:00 - 18:00</option>
+                                <option value="18">18:00 - 19:00</option>
+                                <option value="19">19:00 - 20:00</option>
+                                <option value="20">20:00 - 21:00</option>
+                                <option value="21">21:00 - 22:00</option>
+                                <option value="22">22:00 - 23:00</option>
+                                <option value="23">23:00 - 00:00</option>
+                            </select>
+                    </div>
+                </div>
             </div>
         </div>
     
@@ -68,9 +101,10 @@ Homepage
             <div class="col-md-6">
                 <div class="card shadow-sm">
                     <div class="card-body" style="position: relative; height: 200px; width: 100%;">
-                        <h5 class="card-title">Average SNR for selected month</h5>
+                        <h5 class="card-title">Average SNR for <span id="selectedMonthText">selected month</span></h5>
                         <canvas id="monthlyChart"></canvas>
                         <div id="empty-message-month">There are no recordings for this month.</div>
+                        <div id="fallback-message-month" style="display: none;">Database connection lost, data unavailable!</div>
                     </div>
                 </div>
             </div>
@@ -78,14 +112,16 @@ Homepage
             <div class="col-md-6">
                 <div class="card shadow-sm">
                     <div class="card-body" style="position: relative; height: 200px; width: 100%;">
-                        <h5 class="card-title">Average SNR per hour for selected day</h5>
+                        <h5 class="card-title">Average SNR per hour for <span id="selectedDayText">selected day</span></h5>
                         <canvas id="dailyChart"></canvas>
                         <div id="empty-message-day">There are no recordings for this day.</div>
                         <div id="not-selected-message">No day is currently selected.</div>
+                        <div id="fallback-message-day" style="display: none;">Database connection lost, data unavailable!</div>
                     </div>
                 </div>
             </div>
         </div>
+        <h2>Recordings</h2>
         <table class="table table-striped w-100 mt-2" id="rec-table">
             <thead>
             <tr>
@@ -109,20 +145,6 @@ Homepage
             <span id="page-info" class="text-muted fw-bold">Page 1 of 1</span>
             <button id="next-page" class="btn btn-outline-primary" disabled>Next &gt;</button>
         </div>
-    
-        <h2>All recordings</h2>
-        <h3>Year</h3>
-        {% if years %}
-            <div class="row">
-                {% for y in years %}
-                    <div class="col">
-                        <a class="btn btn-primary btn-lg" style="background-color: rgba(13, 110, 253, 0.5); color: black" href="{% url 'year' y %}">{{ y }}</a>
-                    </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <p>There are no recordings yet.</p>
-        {% endif %}
     </main>
 {% endblock %}
 

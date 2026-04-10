@@ -13,3 +13,9 @@
 .cal-day:hover { background-color: #e2e6ea; }
 .cal-day .badge { font-size: 0.8em; }
 .cal-empty { background-color: transparent; border: none; cursor: default; }
+
+.btn:disabled{
+    cursor: not-allowed;
+    opacity: 0.6;
+    pointer-events: auto;
+}
