@@ -204,7 +204,6 @@ def get_recs(request):
 
     sort = allowed_keys[sort_key]
     try:
-        raise OperationalError
         recordings = Recording.objects.all()
 
         if filter_date:
