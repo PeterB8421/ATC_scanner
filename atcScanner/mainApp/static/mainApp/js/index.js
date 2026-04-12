@@ -103,7 +103,7 @@ function get_recs(sortKey){
                         <tr>
                             <td><a href="${rec.abs_url}"><i class="bi bi-soundwave"></i>${rec.file_name}</a></td>
                             <td> <audio class="rec-player" controls src="${rec.file_path}"></audio> <div class="spec" style="width: 100%;"></div> </td>
-                            <td>${rec.snr}</td>
+                            <td>${rec.snr} dB</td>
                             <td>${rec.duration} s</td>
                             <td>${rec.date}</td>
                             <td>${rec.center_freq} MHz</td>
