@@ -3,10 +3,11 @@ import json
 import logging
 import os.path
 import math
+import re
 
 from pathlib import Path
 from django.core.paginator import Paginator
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -119,7 +120,8 @@ def _parse_json_files(json_files):
                 'snr'      : meta['snr'],
                 'abs_url'  : abs_url,
                 'duration' : meta['duration'],
-                'center_freq': meta['center_freq'],
+                'freq': meta['freq'],
+                'code': meta['code'],
                 'transcript': meta['transcript'],
             })
         except (json.JSONDecodeError, FileNotFoundError):
@@ -234,7 +236,8 @@ def get_recs(request):
                 'snr': rec.snr,
                 'abs_url': rec.abs_url,
                 'duration': rec.duration,
-                'center_freq': rec.center_freq,
+                'freq': rec.freq,
+                'code': rec.code,
                 'transcript': rec.transcript,
             })
 
@@ -370,7 +373,8 @@ def day(request, year, month, day):
 def settings(request):
     if request.method == "GET":
         form = SettingsForm(get_config())
-        return render(request, 'settings.html', {"form": form})
+        airport_data = get_config()['airports']
+        return render(request, 'settings.html', {"form": form, 'airport_data': airport_data})
     elif request.method == "POST":
         form = SettingsForm(request.POST)
         if form.is_valid():
@@ -394,6 +398,90 @@ def settings(request):
             return render(request, 'settings.html', {"form": form})
     else:
         return HttpResponse("Method Not Allowed", status=400)
+
+
+@require_POST
+def upload_airband_config(request):
+    if 'airband_config' not in request.FILES:
+        messages.error(request, 'No file was provided.')
+        return redirect('settings')
+
+    config_file = request.FILES['airband_config']
+
+    try:
+        # Read uploaded file
+        content = config_file.read().decode('utf-8')
+
+        # Remove commented lines
+        content = re.sub(r'#.*', '', content)
+
+        country_match = re.search(r'country\s*=\s*"([^"]+)"', content)
+        location_match = re.search(r'location\s*=\s*"([^"]+)"', content)
+        centerfreq_match = re.search(r'centerfreq\s*=\s*([\d.]+)', content)
+
+        extracted_airports = {}
+
+        # Split file into chunks by 'freq =' string to extract airport data
+        chunks = content.split('freq =')
+
+        # Skip the first chunk (top level data)
+        for chunk in chunks[1:]:
+            # Get frequency from current chunk
+            freq_match = re.search(r'^\s*([\d.]+)', chunk)
+
+            # Get label from current chunk
+            label_match = re.search(r'(?:label|name)\s*=\s*"([^"]+)"', chunk)
+
+            # Get airport code from current chunk
+            airport_match = re.search(r'airport\s*=\s*"([^"]+)"', chunk)
+
+            # Get filename template from given airport
+            template_match = re.search(r'filename_template\s*=\s*"([^"]+)"', chunk)
+
+            if freq_match and label_match:
+                freq = float(freq_match.group(1))
+                identifier = label_match.group(1)
+
+                # Use explicit airport code if found, otherwise guess from the label prefix
+                airport_code = airport_match.group(1) if airport_match else identifier.split('_')[0]
+
+                # Use provided template, or fall back to a default
+                template = template_match.group(1) if template_match else f"{identifier}_{{date}}_{{time}}.mp3"
+
+                extracted_airports[identifier] = {
+                    "code"     : airport_code,
+                    "frequency": freq,
+                    "template" : template
+                }
+
+        # Configuration path
+        config_path = '/scripts/conf/pipeline.json'
+
+        with open(config_path, 'r', encoding='utf-8') as f:
+                pipeline_config = json.load(f)
+
+        if country_match:
+            pipeline_config["country"] = country_match.group(1)
+        if location_match:
+            pipeline_config["location"] = location_match.group(1)
+        if centerfreq_match:
+            pipeline_config["center_freq"] = float(centerfreq_match.group(1))
+
+        if "airports" not in pipeline_config:
+            pipeline_config["airports"] = {}
+
+        pipeline_config["airports"] = extracted_airports
+
+        with open(config_path, 'w', encoding='utf-8') as f:
+            json.dump(pipeline_config, f, indent=2)
+
+        messages.success(request,
+                         f'Successfully extracted {len(extracted_airports)} airports and updated the pipeline configuration!')
+
+    except Exception as e:
+        messages.error(request, f'Failed to process configuration file: {str(e)}')
+
+    return redirect('settings')
 
 
 def deleted_log(request):

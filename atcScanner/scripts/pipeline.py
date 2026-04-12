@@ -83,6 +83,26 @@ def log_deletion(file_path, reason, settings, duration=None, snr=None):
     )
 
 
+def get_metadata_from_filepath(filepath, airport_data):
+    """
+    Extracts the base filename from a full path and searches the
+    airport configuration dictionary to find the matching metadata.
+    """
+    # 1. Strip the directories to get just the file name
+    # e.g. "/home/pi/audio/LKPR_Radar_123.mp3" becomes "LKPR_Radar_123.mp3"
+    filename = os.path.basename(filepath)
+
+    # 2. Loop through every configured airport
+    for identifier, metadata in airport_data.items():
+
+        # 3. Check if the clean filename starts with this identifier
+        if filename.startswith(identifier):
+            return metadata
+
+    # If no match is found
+    return None
+
+
 # Processes a new raw file
 def process_file(input_file, settings):
     from mainApp.models import Recording, Deleted
@@ -138,6 +158,12 @@ def process_file(input_file, settings):
     # Get date and time from file name
     rec_datetime = datetime(int(get_year(input_file)), int(get_month(input_file)), int(get_day(input_file)),
                             int(get_hour(input_file)), int(get_min(input_file)), int(get_sec(input_file)))
+    airport_info = get_metadata_from_filepath(input_file, settings['airports'])
+    if airport_info is None:
+        airport_info = {
+            'code': "",
+            'frequency': 0.0,
+        }
     metadata = {
         'date': rec_datetime.isoformat(),
         'file_path': output_filename,
@@ -148,6 +174,8 @@ def process_file(input_file, settings):
         'snr': snr,
         'duration': duration_sec,
         'transcript': "[Processing...]",
+        'code': airport_info['code'],
+        'freq': airport_info['frequency'],
     }
     # Save JSON metadata next to wav file
     with open(output_filename.replace('.wav', '.json'), 'w') as f:
@@ -165,6 +193,8 @@ def process_file(input_file, settings):
             snr=metadata['snr'],
             duration=metadata['duration'],
             transcript=metadata['transcript'],
+            code=metadata['code'],
+            freq=metadata['freq'],
         )
         recording.save()
     except Exception as e:

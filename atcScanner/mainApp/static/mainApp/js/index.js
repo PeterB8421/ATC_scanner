@@ -106,7 +106,8 @@ function get_recs(sortKey){
                             <td>${rec.snr} dB</td>
                             <td>${rec.duration} s</td>
                             <td>${rec.date}</td>
-                            <td>${rec.center_freq} MHz</td>
+                            <td>${rec.freq} MHz</td>
+                            <td>${rec.code}</td>
                             <td class="${transcriptClass}"><div class="text-truncate" style="max-width: 250px; cursor: help" title="${rec.transcript}">${rec.transcript}</div></td>
                             <td><a class="btn btn-primary" href="${rec.abs_url}">Detail</a></td>
                         </tr>

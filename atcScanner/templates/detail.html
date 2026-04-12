@@ -39,12 +39,12 @@
             <div class="col">{{ recording.location }}</div>
         </div>
         <div class="row">
-            <div class="col"><p class="fw-bold">Center frequency</p></div>
-            <div class="col">{{ recording.center_freq }}</div>
+            <div class="col"><p class="fw-bold">Frequency</p></div>
+            <div class="col">{{ recording.freq }} MHz</div>
         </div>
         <div class="row">
-            <div class="col"><p class="fw-bold">Airport codes</p></div>
-            <div class="col">{{ recording.airport_codes }}</div>
+            <div class="col"><p class="fw-bold">Airport code</p></div>
+            <div class="col">{{ recording.code }}</div>
         </div>
         <div class="row">
             <div class="col"><p class="fw-bold">Date and time</p></div>
@@ -52,7 +52,7 @@
         </div>
         <div class="row">
             <div class="col"><p class="fw-bold">Signal to Noise ratio (SNR)</p></div>
-            <div class="col">{{ recording.snr }}</div>
+            <div class="col">{{ recording.snr }} dB</div>
         </div>
         <div class="row">
             <div class="col"><p class="fw-bold">Duration</p></div>
