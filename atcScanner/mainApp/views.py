@@ -119,6 +119,7 @@ def _parse_json_files(json_files):
                 'snr'      : meta['snr'],
                 'abs_url'  : abs_url,
                 'duration' : meta['duration'],
+                'center_freq': meta['center_freq'],
                 'transcript': meta['transcript'],
             })
         except (json.JSONDecodeError, FileNotFoundError):
@@ -233,6 +234,7 @@ def get_recs(request):
                 'snr': rec.snr,
                 'abs_url': rec.abs_url,
                 'duration': rec.duration,
+                'center_freq': rec.center_freq,
                 'transcript': rec.transcript,
             })
 

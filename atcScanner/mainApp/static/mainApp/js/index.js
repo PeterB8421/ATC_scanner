@@ -19,6 +19,7 @@ let activeFilterHour = null;
 const calendarGrid = document.getElementById('calendar-grid');
 const clearButton = document.getElementById('clear-date');
 let currentPage = 1;
+let totalPages = 1;
 
 // Graphs for average SNR
 let monthlyChart = null;
@@ -105,6 +106,7 @@ function get_recs(sortKey){
                             <td>${rec.snr}</td>
                             <td>${rec.duration} s</td>
                             <td>${rec.date}</td>
+                            <td>${rec.center_freq} MHz</td>
                             <td class="${transcriptClass}"><div class="text-truncate" style="max-width: 250px; cursor: help" title="${rec.transcript}">${rec.transcript}</div></td>
                             <td><a class="btn btn-primary" href="${rec.abs_url}">Detail</a></td>
                         </tr>
@@ -133,9 +135,12 @@ function get_recs(sortKey){
                     })
                 })
                 const pageStats = data.pagination;
-                document.getElementById('page-info').textContent = `Page ${pageStats.current_page} of ${pageStats.total_pages}`;
-                document.getElementById('prev-page').disabled = !pageStats.has_previous;
-                document.getElementById('next-page').disabled = !pageStats.has_next;
+                totalPages = pageStats.total_pages;
+
+                document.querySelectorAll('.jump-to-page-input').forEach(el => el.value = pageStats.current_page);
+                document.querySelectorAll('.total-pages-info').forEach(el => el.textContent = `of ${pageStats.total_pages}`);
+                document.querySelectorAll('.prev-page-btn').forEach(el => el.disabled = !pageStats.has_previous);
+                document.querySelectorAll('.next-page-btn').forEach(el => el.disabled = !pageStats.has_next);
                 document.getElementById('total-recs').innerHTML = `Total recordings (with current filters): <b>${pageStats.total_recs}</b>`;
             }
         })
@@ -457,16 +462,20 @@ clearButton.addEventListener('click', () => {
     get_recs(apiSortKey);
 });
 
-document.getElementById('prev-page').addEventListener('click', () => {
-    currentPage--;
-    const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
-    get_recs(apiSortKey);
+document.querySelectorAll('.prev-page-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        currentPage--;
+        const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
+        get_recs(apiSortKey);
+    });
 });
 
-document.getElementById('next-page').addEventListener('click', () => {
-    currentPage++;
-    const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
-    get_recs(apiSortKey);
+document.querySelectorAll('.next-page-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        currentPage++;
+        const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
+        get_recs(apiSortKey);
+    });
 });
 
 // Event listener for data refresh button
@@ -511,6 +520,20 @@ document.getElementById('time-filter').addEventListener('change', async function
         console.error("Error loading table data:", error);
         alert("Failed to refresh data. Please try again.");
     }
+});
+
+document.querySelectorAll('.jump-to-page-input').forEach(input => {
+    input.addEventListener('change', function(e) {
+        let targetPage = parseInt(e.target.value);
+
+        if (targetPage >= 1 && targetPage <= totalPages) {
+            currentPage = targetPage;
+            const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
+            get_recs(apiSortKey);
+        } else {
+            e.target.value = currentPage;
+        }
+    });
 });
 
 // Load the initial calendar on page load
