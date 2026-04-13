@@ -96,7 +96,7 @@ def get_metadata_from_filepath(filepath, airport_data):
     for identifier, metadata in airport_data.items():
 
         # 3. Check if the clean filename starts with this identifier
-        if filename.startswith(identifier):
+        if filename.startswith(identifier) or filename.startswith(metadata['template']):
             return metadata
 
     # If no match is found
