@@ -13,24 +13,24 @@
     {% endblock %}
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <a class="navbar-brand" href="{% url 'index' %}">ATC pipeline</a>
+<nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top">
     <ul class="navbar-nav mr-auto">
+        <li class="nav-item"><a class="nav-link" href="{% url 'index' %}">Homepage</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'settings' %}">Settings</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'deleted_log' %}">Deleted files log</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'stats' %}">Statistics</a></li>
     </ul>
 </nav>
 {% if messages %}
-          <div class="mt-3" id="msg">
-            {% for message in messages %}
-              <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-              </div>
-            {% endfor %}
-          </div>
-        {% endif %}
+  <div class="mt-3" id="msg">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
 
 {% block breadcrumbs %}
 {% endblock %}
@@ -38,6 +38,7 @@
 {% block content %}
 {% endblock %}
 
+<script src="{% static 'mainApp/js/base.js' %}"></script>
 {% block scripts %}
 {% endblock %}
 </body>

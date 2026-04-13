@@ -24,7 +24,7 @@
             <div class="col-md-8">
                 <div class="card shadow-sm">
                     <div class="card-body">
-                        <h5 class="card-title">Number of recordings & average SNR</h5>
+                        <h5 class="card-title">Number of recordings per day & average SNR per day</h5>
                         <canvas id="timelineChart" height="100"></canvas>
                     </div>
                 </div>
@@ -35,6 +35,34 @@
                     <div class="card-body">
                         <h5 class="card-title">Deletion Breakdown</h5>
                         <canvas id="deletionsChart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold">Total processed and deleted recordings</h5>
+                        <canvas id="totalFilesChart" height="100"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold">Total processed recordings per airport code</h5>
+                        <canvas id="recsPerCodeChart" height="100"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold">Total recording duration per day</h5>
+                        <canvas id="totalDurationChart" height="100"></canvas>
                     </div>
                 </div>
             </div>

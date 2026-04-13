@@ -15,7 +15,7 @@ from django.contrib import messages
 from django.utils.dateparse import parse_datetime
 from django.db import OperationalError
 from django.db.models.functions import TruncDay, TruncHour
-from django.db.models import Count, Avg
+from django.db.models import Count, Avg, Sum
 from datetime import datetime
 from .models import Recording, Transcripts, Deleted
 from .forms import SettingsForm
@@ -610,7 +610,8 @@ def get_stats(request):
         .values('day')
         .annotate(
             total_count=Count('id'),
-            avg_snr=Avg('snr')
+            avg_snr=Avg('snr'),
+            total_duration=Sum('duration')
         )
         .order_by('day')
     )
@@ -619,6 +620,7 @@ def get_stats(request):
     dates_label = []
     volume_data = []
     snr_data = []
+    duration_data = []
 
     for stat in daily_stats:
         if stat['day']:  # Ensure date isn't null
@@ -626,6 +628,11 @@ def get_stats(request):
             volume_data.append(stat['total_count'])
             # Round SNR to 2 decimal places, default to 0 if None
             snr_data.append(round(stat['avg_snr'], 2) if stat['avg_snr'] else 0)
+
+            # Get total duration in hours
+            raw_seconds = stat['total_duration'] or 0
+            hours = raw_seconds / 3600
+            duration_data.append(round(hours, 2))
 
     # DELETION REASONS BREAKDOWN
     deletion_stats = (
@@ -648,6 +655,20 @@ def get_stats(request):
         deletion_labels.append(str(human_readable))
         deletion_data.append(stat['count'])
 
+    processed_files = len(Recording.objects.all())
+    deleted_files = len(Deleted.objects.all())
+
+    airport_qs = (
+        Recording.objects
+        .exclude(code__isnull=True).exclude(code__exact='')  # Ignore blank ones
+        .values('code')
+        .annotate(count=Count('id'))
+        .order_by('-count')[:10]  # Grab the top 10 most active
+    )
+
+    airport_labels = [entry['code'] for entry in airport_qs]
+    airport_counts = [entry['count'] for entry in airport_qs]
+
     # RETURN AS A UNIFIED JSON RESPONSE
     return JsonResponse({
         "timeline": {
@@ -658,5 +679,17 @@ def get_stats(request):
         "deletions": {
             "labels": deletion_labels,
             "data": deletion_data
+        },
+        "total": {
+            "processed": processed_files,
+            "deleted": deleted_files
+        },
+        "airports": {
+            'airport_labels': airport_labels,
+            'airport_counts': airport_counts
+        },
+        "duration": {
+            "labels": dates_label,
+            "duration": duration_data
         }
     })

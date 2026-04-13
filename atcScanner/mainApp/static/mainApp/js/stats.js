@@ -83,6 +83,119 @@ document.addEventListener("DOMContentLoaded", async function() {
             }
         });
 
+        const ctxCombined = document.getElementById('totalFilesChart').getContext('2d');
+
+        new Chart(ctxCombined, {
+            type: 'bar',
+            data: {
+                // Two labels on the X-axis
+                labels: ['Processed Files', 'Deleted Files'],
+
+                datasets: [{
+                    label: 'Total files',
+                    // Pass BOTH numbers into a single array
+                    data: [data.total.processed, data.total.deleted],
+
+                    // Pass BOTH colors so the first bar is blue and the second is red
+                    backgroundColor: [
+                        'rgba(13, 110, 253, 0.8)', // Blue for Processed
+                        'rgba(220, 53, 69, 0.8)'   // Red for Deleted
+                    ],
+                    borderColor: [
+                        '#0d6efd',
+                        '#dc3545'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false // Turn this off, the X-axis labels already explain it!
+                    }
+                }
+            }
+        });
+
+        const ctxAirport = document.getElementById('recsPerCodeChart').getContext('2d');
+
+        new Chart(ctxAirport, {
+            type: 'bar',
+            data: {
+                labels: data.airports.airport_labels,
+                datasets: [{
+                    data: data.airports.airport_counts,
+
+                    // A nice array of distinct Bootstrap-style colors for the slices
+                    backgroundColor: [
+                        'rgba(13, 110, 253, 0.8)',  // Primary Blue
+                        'rgba(25, 135, 84, 0.8)',   // Success Green
+                        'rgba(255, 193, 7, 0.8)',   // Warning Yellow
+                        'rgba(220, 53, 69, 0.8)',   // Danger Red
+                        'rgba(13, 202, 240, 0.8)',  // Info Cyan
+                        'rgba(102, 16, 242, 0.8)'   // Indigo
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#ffffff' // Adds a clean white line between slices
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                // Adds a nice bounce effect when the page loads
+                animation: {
+                    animateScale: true,
+                    animateRotate: true
+                }
+            }
+        });
+
+        const ctxDuration = document.getElementById('totalDurationChart').getContext('2d');
+
+        new Chart(ctxDuration, {
+            type: 'bar',
+            data: {
+                labels: data.duration.labels,
+                datasets: [{
+                    label: 'Total Audio (Hours)',
+                    data: data.duration.duration,
+                    backgroundColor: 'rgba(25, 135, 84, 0.8)',
+                    borderColor: '#198754',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            // Just append "hrs" to whatever number Django sent
+                            label: function(context) {
+                                return `Total Time: ${context.parsed.y} hrs`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            // Just append "hrs" to the Y-axis numbers
+                            callback: function(value) {
+                                return value + ' hrs';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
     } catch (error) {
         console.error("Failed to load statistics:", error);
         errorContainer.innerHTML = `

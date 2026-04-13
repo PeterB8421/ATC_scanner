@@ -16,19 +16,24 @@
 
 {% block content %}
     <main class="container">
-        <h2>Settings for ATC scanner</h2>
-        <form method="post">
-            {% csrf_token %}
-            {% bootstrap_form form layout='horizontal' %}
-            <button type="Submit" class="btn btn-success">Save</button>
-        </form>
+        <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h2>Settings for ATC scanner</h2>
+                    <form method="post">
+                        {% csrf_token %}
+                        {% bootstrap_form form layout='horizontal' %}
+                        <button type="Submit" class="btn btn-success">Save</button>
+                    </form>
+                </div>
+        </div>
         <br>
         <form method="post" action="{% url 'upload_airband_config' %}" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="card shadow-sm mb-4">
                 <div class="card-body">
                     <h5 class="card-title fw-bold">Upload Settings File</h5>
-                    
+                    <p>To collect data about recording frequency and airport code, please upload RTL SDR Airband configuration file. <br>
+                        Only tested configuration file is from this repository (other configuration files might not work): <a href="https://github.com/rtl-airband/RTLSDR-Airband">https://github.com/rtl-airband/RTLSDR-Airband</a></p>
                     <div class="mb-3">
                         <input class="form-control" name="airband_config" type="file" id="settingsFileUpload">
                     </div>
