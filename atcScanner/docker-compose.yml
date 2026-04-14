@@ -13,6 +13,7 @@ services:
       - ./records:/data/in
       - ./audio_files:/data/out
       - ./scripts:/scripts
+      - ./exports:/data/export
     container_name: django-docker
     ports:
       - "10000:10000"

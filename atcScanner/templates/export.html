@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {{ recording.file_name }}
+{% endblock %}
+
+{% block css %}
+    <link rel="stylesheet" href="{% static 'mainApp/css/export.css' %}">
+{% endblock %}
+
+{% block breadcrumbs %}
+    <nav aria-label="breadcrumb" class="container">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Homepage</a></li>
+            <li class="breadcrumb-item" aria-current="page">Export data</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    <main class="container">
+        <div id="export-message-container"></div>
+        <h1>Export processed recordings</h1>
+        <h2>Created ZIP files</h2>
+        <table class="table table-striped w-100 mt-2">
+            <thead>
+                <tr>
+                    <th>Filename</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="export-table-content">
+                <tr>
+                    <td colspan="2">Loading...</td>
+                </tr>
+            </tbody>
+        </table>
+        <h2>Export all data</h2>
+        <p>Here you can export your dataset. You can export all recordings (including metadata) or specify month or day to export.</p>
+        <div class="row">
+            <a href="{% url 'export_new' %}" class="btn btn-success" id="export-all">Export all data in ZIP format</a>
+        </div>
+        <h2>Export data for month/day</h2>
+        
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <button id="prev-month" class="btn btn-outline-secondary btn-sm">&lt; Prev</button>
+            <select id="month-select" class="form-select form-select-sm w-auto">
+                <option value="1">January</option>
+                <option value="2">February</option>
+                <option value="3">March</option>
+                <option value="4">April</option>
+                <option value="5">May</option>
+                <option value="6">June</option>
+                <option value="7">July</option>
+                <option value="8">August</option>
+                <option value="9">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+            </select>
+            
+            <select id="year-select" class="form-select form-select-sm w-auto"></select>
+            <button id="next-month" class="btn btn-outline-secondary btn-sm">Next &gt;</button>
+        </div>
+        <div id="calendar-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; max-width: 600px; margin: 0 auto;"></div>
+        <p class="col-md-6" style="display: none;" id="selected-day-message">Selected day: <b id="selectedDay"></b></p>
+        <div class="text-center mt-3">
+            <button id="clear-date" class="btn btn-warning btn-sm" style="display: none;">
+                Clear Selection
+            </button>
+        </div>
+        <div class="row">
+            <button id="monthExport" class="col btn btn-success" data-url="{% url 'export_new' %}">Export data for selected month</button>
+            <button id="dayExport" class="col btn btn-secondary disabled" disabled aria-disabled="true" data-url="{% url 'export_new' %}">Export data for selected day</button>
+        </div>
+    </main>
+{% endblock %}
+
+{% block scripts %}
+    <script type="module" src="{% static 'mainApp/js/export.js' %}"></script>
+{% endblock %}

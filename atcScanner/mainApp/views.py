@@ -4,6 +4,7 @@ import logging
 import os.path
 import math
 import re
+import shutil
 
 from pathlib import Path
 from django.core.paginator import Paginator
@@ -341,35 +342,6 @@ def detail(request, year, month, day, fname=None, pk=None):
     return render(request, 'detail.html', {'recording': recording, 'year': year, 'month': month, 'day': day})
 
 
-def year(request, year):
-    base_path = '/data/out/' + year
-    months = []
-    for name in os.listdir(base_path):
-        full = os.path.join(base_path, name)
-        if os.path.isdir(full) and len(name) == 2 and name.isdigit():
-            months.append(name)
-    for m in months:
-        m.lstrip('0')
-    return render(request, 'year.html', {'months': months, 'year': year})
-
-
-def month(request, year, month):
-    base_path = '/data/out/' + year + '/' + month
-    days = []
-    for name in os.listdir(base_path):
-        full = os.path.join(base_path, name)
-        if os.path.isdir(full) and len(name) == 2 and name.isdigit():
-            days.append(name)
-    return render(request, 'month.html', {'days': days, 'year': year, 'month': month})
-
-
-def day(request, year, month, day):
-    base_path = '/data/out/' + year + '/' + month + '/' + day
-    recs = glob.glob(base_path + '/*.wav')
-    recs = [os.path.basename(path) for path in recs]
-    return render(request, 'day.html', {'recs': recs, 'year': year, 'month': month, 'day': day})
-
-
 def settings(request):
     if request.method == "GET":
         form = SettingsForm(get_config())
@@ -693,3 +665,58 @@ def get_stats(request):
             "duration": duration_data
         }
     })
+
+
+def export_page(request):
+    return render(request, 'export.html')
+
+
+def new_export(request):
+    date = datetime.now()
+    year = request.GET.get('year')
+    month = request.GET.get('month')
+    day = request.GET.get('day')
+    export_path = '/data/out'
+    if year:
+        export_path += f'/{year}'
+    if month:
+        export_path += f'/{month}'
+    if day:
+        export_path += f'/{day}'
+
+    prefix = 'ALL'
+    if year and month and day:
+        prefix = f'DAY-{year}-{month}-{day}'
+    elif year and month:
+        prefix = f'MONTH-{year}-{month}'
+    else:
+        return JsonResponse({'error': "Invalid combination of date!"}, status=400)
+
+    filename = date.strftime(f'{prefix}_%Y-%m-%d_%H-%M-%S')
+    os.makedirs('/data/export', exist_ok=True)
+    try:
+        shutil.make_archive(base_name=f'/data/export/{filename}', format='zip', root_dir=export_path)
+        return JsonResponse({'filename': filename}, status=200)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+def get_export_archives(request):
+    export_path = '/data/export'
+    if not os.path.exists(export_path):
+        return JsonResponse({'files': []}, status=200)
+    files = glob.glob(f'{export_path}/*.zip')
+    return JsonResponse({'files': files}, status=200)
+
+
+def delete_export_archive(request):
+    file_path = request.GET.get('file')
+    if not file_path:
+        return JsonResponse({'error': "No file path provided!"}, status=400)
+    if not file_path.startswith('/data/export/'):
+        return JsonResponse({'error': "Invalid file path!"}, status=400)
+    if os.path.exists(file_path):
+        os.remove(file_path)
+        return JsonResponse({'message': "File successfully deleted!"}, status=200)
+    else:
+        return JsonResponse({'error': "File does not exist!"}, status=400)

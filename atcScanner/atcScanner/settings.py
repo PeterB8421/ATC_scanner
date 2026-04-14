@@ -18,6 +18,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 MEDIA_URL = '/data/out/'
 MEDIA_ROOT = '/data/out/'
 
+ARCHIVE_URL = '/data/export/'
+ARCHIVE_ROOT = '/data/export/'
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
