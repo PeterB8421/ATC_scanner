@@ -103,6 +103,13 @@ def get_metadata_from_filepath(filepath, airport_data):
     return None
 
 
+def remove_output_files(output_filename):
+    try:
+        os.remove(output_filename.replace('.wav', '_RAW.wav'))
+    except Exception:
+        pass
+    os.remove(output_filename)
+
 # Processes a new raw file
 def process_file(input_file, settings):
     from mainApp.models import Recording, Deleted
@@ -135,6 +142,7 @@ def process_file(input_file, settings):
         logging.info(f'Removing {os.path.basename(output_filename)}, too short. Audio duration: {duration_sec} s, min. duration: {settings["min_audio_len"]} s')
         log_deletion(input_file, reason.TOO_SHORT, settings, duration=duration_sec)
         os.remove(input_file)
+        os.remove(output_filename.replace('.wav', '_RAW.wav'))
         os.remove(output_filename)
         return
 
@@ -143,10 +151,11 @@ def process_file(input_file, settings):
         logging.info(f'Removing {os.path.basename(output_filename)}, too long. Audio duration: {duration_sec} s, max. duration: {settings["max_audio_len"]} s')
         log_deletion(input_file, reason.TOO_LONG, settings, duration=duration_sec)
         os.remove(input_file)
-        os.remove(output_filename)
+        remove_output_files(output_filename)
         return
 
-    snr = SNR(output_filename).get_snr()
+    snr = SNR(output_filename.replace('.wav', '_RAW.wav')).get_snr()
+    os.remove(output_filename.replace('.wav', '_RAW.wav'))
     # Delete automatically if there is too much noise
     if snr < settings['snr_thres']:
         logging.info(f'Removing {output_filename} SNR = {snr}, thres = {settings["snr_thres"]}')

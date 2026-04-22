@@ -345,16 +345,17 @@ def detail(request, year, month, day, fname=None, pk=None):
 def settings(request):
     if request.method == "GET":
         form = SettingsForm(get_config())
-        airport_data = get_config()['airports']
+        airport_data = get_config().get('airports', [])
         return render(request, 'settings.html', {"form": form, 'airport_data': airport_data})
+
     elif request.method == "POST":
         form = SettingsForm(request.POST)
+
         if form.is_valid():
-            print(type(form.cleaned_data['min_audio_len']))
-            print(type(form.cleaned_data['max_audio_len']))
             if form.cleaned_data['min_audio_len'] > form.cleaned_data['max_audio_len']:
                 messages.error(request, 'Minimum audio length must be lower than maximum audio length')
                 return render(request, 'settings.html', {"form": form})
+
             if form.cleaned_data['file_ext'] == '.cs16':
                 form.cleaned_data['script_name'] = 'decode_cs16.sh'
             elif form.cleaned_data['file_ext'] == '.cf32':
@@ -362,12 +363,20 @@ def settings(request):
             else:
                 messages.error(request, 'Unsupported input file type')
                 return render(request, 'settings.html', {'form': form})
+            current_config = get_config()
+
+            current_config.update(form.cleaned_data)
+
             with open('/app/scripts/conf/pipeline.json', 'w') as f:
-                json.dump(form.cleaned_data, f, indent=2, sort_keys=True)
+                json.dump(current_config, f, indent=2, sort_keys=True)
+
             messages.success(request, 'Settings saved, restarting pipeline service')
+
             with open('/app/shared/restart_pipeline.flag', 'w') as f:
                 f.write('restart')
+
             return render(request, 'settings.html', {"form": form})
+
     else:
         return HttpResponse("Method Not Allowed", status=400)
 
