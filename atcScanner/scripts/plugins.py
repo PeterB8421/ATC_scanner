@@ -12,8 +12,8 @@ from asgiref.sync import sync_to_async
 FAIL_TEXT = "[Transcription failed]"
 
 
-@register_plugin("whisper_asr_webhook")
-class WhisperASRWebhook(BaseProcessor):
+@register_plugin("asr_api_webhook")
+class ASRAPIWebhook(BaseProcessor):
     """
     Class for processing audio files using ASR API in a different Docker container (ATC_transcriber) included in this project.
     This class uses a webhook to save resulting transcription. Transcription is saved using function receive_transcription(request) in views.py.
@@ -89,8 +89,8 @@ class WhisperASRWebhook(BaseProcessor):
             close_old_connections()
 
 
-@register_plugin("whisper_asr")
-class WhisperASR(BaseProcessor):
+@register_plugin("asr_api_polling")
+class ASRAPIPolling(BaseProcessor):
     """
     Class for processing audio files using ASR API in a different Docker container (ATC_transcriber) included in this project.
     This class uses polling to save resulting transcription. Transcription is saved after returned status from API server is 'completed' (or 'failed').
