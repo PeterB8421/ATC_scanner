@@ -150,6 +150,8 @@ class ASRAPIPolling(BaseProcessor):
                         else:
                             # If transcription failed, save the FAIL_TEXT
                             text = FAIL_TEXT
+                            logging.error('Transcription failed')
+                            logging.debug(response)
                         await self._update_json_transcript(file_path, text)
                         await self._update_database_transcript(file_path, text)
                         return

@@ -573,12 +573,14 @@ def receive_transcription(request):
         text = data.get('text')
 
         if not job_id:
+            logging.debug("The payload didn't contain a job_id at all!")
             return JsonResponse({"error": "Missing job id"}, status=400)
 
         try:
             transcript_record = Transcripts.objects.get(job_id=job_id)
             file_path = transcript_record.file_path
         except Transcripts.DoesNotExist:
+            logging.debug(f"Could not find job_id {job_id} in the database!")
             return JsonResponse({"error": "Job id not found in DB"}, status=400)
 
         transcript_record.status = status

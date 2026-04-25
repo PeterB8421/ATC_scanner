@@ -15,13 +15,13 @@ from datetime import datetime
 
 ACTIVE_PLUGINS = {
     # ASR API polling plugin
-    # "asr_api_polling": {
-    #     "url": "http://host.docker.internal:11000"
-    # },
-    # ASR API webhook plugin
-    "asr_api_webhook": {
+    "asr_api_polling": {
         "url": "http://host.docker.internal:11000"
-    }
+    },
+    # ASR API webhook plugin
+    # "asr_api_webhook": {
+    #     "url": "http://host.docker.internal:11000"
+    # }
 }
 
 # Import shared config function
