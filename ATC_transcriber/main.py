@@ -2,34 +2,52 @@ import tempfile
 import os
 import shutil
 import uuid
-import requests
+import requests  # 🌟 NEW: Needed to send the webhook
+import logging
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks
-from faster_whisper import WhisperModel
+import nemo.collections.asr as nemo_asr
 
-app = FastAPI(title="Pi-Optimized Async Whisper API with Webhooks")
+app = FastAPI(title="Async Parakeet ASR API with Webhooks")
 
 jobs = {}
 
-print("Loading optimized Whisper model...")
-model = WhisperModel("base", device="cpu", compute_type="int8")
+MODEL_PATH = "/models/parakeet-model.nemo"
+
+print(f"Loading Parakeet model from {MODEL_PATH}...")
+model = nemo_asr.models.ASRModel.restore_from(MODEL_PATH)
 print("Model loaded successfully!")
 
-# Updated Background Task with Webhook logic
+
+# 2. The Background Task Function
 def transcribe_background_task(job_id: str, file_path: str, webhook_url: str = None):
     jobs[job_id]["status"] = "processing"
     
     try:
-        segments, info = model.transcribe(file_path, beam_size=5, language="en")
-        full_text = "".join([segment.text for segment in segments])
+        transcriptions = model.transcribe(audio=[file_path])
         
+        # 1. Safely extract the first item from the returned data
+        if isinstance(transcriptions, tuple):
+            result = transcriptions[0][0]
+        else:
+            result = transcriptions[0]
+            
+        # 2. 🌟 THE NEW FIX: Extract the text from the Hypothesis object
+        if hasattr(result, 'text'):
+            full_text = result.text
+        else:
+            # Fallback just in case a future version returns a raw string
+            full_text = str(result)
+            
         jobs[job_id]["status"] = "completed"
         jobs[job_id]["text"] = full_text.strip()
         
     except Exception as e:
+        logging.error(f'Job failed, error: {e}')
         jobs[job_id]["status"] = "failed"
         jobs[job_id]["error"] = str(e)
         
     finally:
+        # Clean up the file first so we don't leak storage if the webhook hangs
         if os.path.exists(file_path):
             os.remove(file_path)
             
@@ -44,18 +62,20 @@ def transcribe_background_task(job_id: str, file_path: str, webhook_url: str = N
             except requests.exceptions.RequestException as e:
                 print(f"Failed to send webhook for job {job_id}: {e}")
 
-# Updated Endpoint to accept webhook_url
+
+# 3. Endpoint 1: Upload the file (Now accepts an optional webhook_url)
 @app.post("/transcribe/")
 async def upload_audio(
     background_tasks: BackgroundTasks, 
     file: UploadFile = File(...),
-    webhook_url: str = Form(None) # Optional form field
+    webhook_url: str = Form(None)  # 🌟 NEW: Optional form field for the callback
 ):
     if not file.content_type.startswith("audio/"):
         raise HTTPException(status_code=400, detail="File must be an audio format.")
 
     job_id = str(uuid.uuid4())
-    jobs[job_id] = {"status": "pending"}
+    # Store the webhook URL in our job state just in case we need to debug it later
+    jobs[job_id] = {"status": "pending", "webhook_url": webhook_url}
 
     fd, temp_file_path = tempfile.mkstemp(suffix=".wav")
     try:
@@ -67,13 +87,21 @@ async def upload_audio(
     finally:
         file.file.close()
 
-    # Pass the webhook_url into the background task
+    # Pass the webhook URL into the background task
     background_tasks.add_task(transcribe_background_task, job_id, temp_file_path, webhook_url)
     
-    return {"job_id": job_id, "status": "pending", "message": "Transcription started."}
+    return {
+        "job_id": job_id, 
+        "status": "pending", 
+        "message": "Transcription started.",
+        "webhook_url": webhook_url
+    }
 
+
+# 4. Endpoint 2: The Polling fallback (Keep this just in case!)
 @app.get("/status/{job_id}")
 async def get_transcription_status(job_id: str):
     if job_id not in jobs:
         raise HTTPException(status_code=404, detail="Job ID not found.")
+        
     return jobs[job_id]
