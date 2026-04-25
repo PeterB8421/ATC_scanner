@@ -36,13 +36,9 @@
                 </tr>
             </tbody>
         </table>
-        <h2>Export all data</h2>
-        <p>Here you can export your dataset. You can export all recordings (including metadata) or specify month or day to export.</p>
-        <div class="row">
-            <a href="{% url 'export_new' %}" class="btn btn-success" id="export-all">Export all data in ZIP format</a>
-        </div>
-        <h2>Export data for month/day</h2>
-        
+        <h2>Export data for specific day</h2>
+        <p>Here you can export part of collected data. To create an export file, it is required to specify the day you want to export the data from.
+            You can also specify an hour period to export, but this is optional.</p>
         <div class="d-flex justify-content-between align-items-center mb-2">
             <button id="prev-month" class="btn btn-outline-secondary btn-sm">&lt; Prev</button>
             <select id="month-select" class="form-select form-select-sm w-auto">
@@ -64,15 +60,46 @@
             <button id="next-month" class="btn btn-outline-secondary btn-sm">Next &gt;</button>
         </div>
         <div id="calendar-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; max-width: 600px; margin: 0 auto;"></div>
-        <p class="col-md-6" style="display: none;" id="selected-day-message">Selected day: <b id="selectedDay"></b></p>
+        <div class="row">
+            <p class="col-md-6">
+                Select time: 
+                <select id="timeSelect" class="form-select form-select-sm w-auto">
+                    <option value="">Whole day</option>
+                    <option value="00">00:00 - 01:00</option>
+                    <option value="01">01:00 - 02:00</option>
+                    <option value="02">02:00 - 03:00</option>
+                    <option value="03">03:00 - 04:00</option>
+                    <option value="04">04:00 - 05:00</option>
+                    <option value="05">05:00 - 06:00</option>
+                    <option value="06">06:00 - 07:00</option>
+                    <option value="07">07:00 - 08:00</option>
+                    <option value="08">08:00 - 09:00</option>
+                    <option value="09">09:00 - 10:00</option>
+                    <option value="10">10:00 - 11:00</option>
+                    <option value="11">11:00 - 12:00</option>
+                    <option value="12">12:00 - 13:00</option>
+                    <option value="13">13:00 - 14:00</option>
+                    <option value="14">14:00 - 15:00</option>
+                    <option value="15">15:00 - 16:00</option>
+                    <option value="16">16:00 - 17:00</option>
+                    <option value="17">17:00 - 18:00</option>
+                    <option value="18">18:00 - 19:00</option>
+                    <option value="19">19:00 - 20:00</option>
+                    <option value="20">20:00 - 21:00</option>
+                    <option value="21">21:00 - 22:00</option>
+                    <option value="22">22:00 - 23:00</option>
+                    <option value="23">23:00 - 00:00</option>
+                </select>
+            </p>
+            <p class="col-md-6" style="display: none;" id="selected-day-message">Selected day: <b id="selectedDay"></b></p>
+        </div>
         <div class="text-center mt-3">
             <button id="clear-date" class="btn btn-warning btn-sm" style="display: none;">
                 Clear Selection
             </button>
         </div>
         <div class="row">
-            <button id="monthExport" class="col btn btn-success" data-url="{% url 'export_new' %}">Export data for selected month</button>
-            <button id="dayExport" class="col btn btn-secondary disabled" disabled aria-disabled="true" data-url="{% url 'export_new' %}">Export data for selected day</button>
+            <button id="dayExport" class="col btn btn-primary disabled" disabled aria-disabled="true" data-url="{% url 'export_new' %}">Export data for selected day and time</button>
         </div>
     </main>
 {% endblock %}

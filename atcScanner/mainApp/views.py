@@ -717,33 +717,74 @@ def export_page(request):
     return render(request, 'export.html')
 
 
+import os
+import zipfile
+from datetime import datetime
+from django.http import JsonResponse
+
+import os
+import zipfile
+from datetime import datetime
+from django.http import JsonResponse
+
+
 def new_export(request):
     date = datetime.now()
     year = request.GET.get('year')
     month = request.GET.get('month')
     day = request.GET.get('day')
-    export_path = '/data/out'
-    if year:
-        export_path += f'/{year}'
-    if month:
-        export_path += f'/{month}'
-    if day:
-        export_path += f'/{day}'
+    hour = request.GET.get('hour')
 
-    prefix = 'ALL'
-    if year and month and day:
-        prefix = f'DAY-{year}-{month}-{day}'
-    elif year and month:
-        prefix = f'MONTH-{year}-{month}'
-    else:
-        return JsonResponse({'error': "Invalid combination of date!"}, status=400)
+    if not all([year, month, day]):
+        return JsonResponse({"error": "Year, month, and day are required"}, status=400)
 
-    filename = date.strftime(f'{prefix}_%Y-%m-%d_%H-%M-%S')
-    os.makedirs('/data/export', exist_ok=True)
+    # Pad the numbers with zeros just in case the frontend sends "4" instead of "04"
+    padded_month = str(month).zfill(2)
+    padded_day = str(day).zfill(2)
+
+    export_path = f'/data/out/{year}/{padded_month}/{padded_day}'
+
+    if not os.path.exists(export_path):
+        return JsonResponse({"error": "No data found for this date"}, status=404)
+
+    prefix = f'DAY-{year}-{padded_month}-{padded_day}'
+    if hour is not None:
+        padded_hour = str(hour).zfill(2)
+        prefix = f'HOUR-{year}-{padded_month}-{padded_day}-{padded_hour}'
+
+    # The final output archive name
+    filename = date.strftime(f'{prefix}_%Y-%m-%d_%H-%M-%S.zip')
+    export_dir = '/data/export'
+    os.makedirs(export_dir, exist_ok=True)
+
+    zip_filepath = os.path.join(export_dir, filename)
+
     try:
-        shutil.make_archive(base_name=f'/data/export/{filename}', format='zip', root_dir=export_path)
-        return JsonResponse({'filename': filename}, status=200)
+        with zipfile.ZipFile(zip_filepath, 'w', zipfile.ZIP_DEFLATED) as zipf:
+
+            for root, dirs, files in os.walk(export_path):
+                for file in files:
+
+                    # 🌟 THE NEW FILTERING LOGIC 🌟
+                    if hour is not None:
+                        # Build the exact string: e.g., "_20260425_14"
+                        time_marker = f"_{year}{padded_month}{padded_day}_{padded_hour}"
+
+                        # If that exact sequence isn't in the filename, skip it
+                        if time_marker not in file:
+                            continue
+
+                    absolute_file_path = os.path.join(root, file)
+                    relative_arc_path = os.path.relpath(absolute_file_path, export_path)
+
+                    zipf.write(absolute_file_path, arcname=relative_arc_path)
+
+        clean_filename = filename.replace('.zip', '')
+        return JsonResponse({'filename': clean_filename}, status=200)
+
     except Exception as e:
+        if os.path.exists(zip_filepath):
+            os.remove(zip_filepath)
         return JsonResponse({'error': str(e)}, status=500)
 
 

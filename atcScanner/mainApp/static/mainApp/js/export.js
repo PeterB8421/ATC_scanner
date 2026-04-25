@@ -142,101 +142,8 @@ clearButton.addEventListener('click', () => {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-    const exportBtn = document.getElementById('export-all');
-    const exportMonthBtn = document.getElementById('monthExport');
     const exportDayBtn = document.getElementById('dayExport');
     const messageContainer = document.getElementById('export-message-container');
-
-    exportBtn.addEventListener('click', async function(event) {
-        // Stop the browser from following the link
-        event.preventDefault();
-
-        // Clear old messages and show loading state
-        messageContainer.innerHTML = '';
-        const originalText = this.innerHTML;
-        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
-        this.classList.add('disabled');
-
-        try {
-            // Send request to Django endpoint
-            const response = await fetch(this.href);
-
-            if (!response.ok) {
-                throw new Error(`Server error: ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            // Show success message
-            messageContainer.innerHTML = `
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <strong>Success!</strong> The archive named <b>${data.filename}</b> was created successfully.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>`;
-            loadFileList();
-
-        } catch (error) {
-            console.error("Archive creation failed:", error);
-
-            // Show error message
-            messageContainer.innerHTML = `
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <strong>Failed!</strong> There was an error creating the archive.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>`;
-        } finally {
-            // Reset the button
-            this.innerHTML = originalText;
-            this.classList.remove('disabled');
-        }
-    });
-
-    exportMonthBtn.addEventListener('click', async function(event) {
-        // Stop the browser from following the link
-        event.preventDefault();
-
-        // Clear old messages and show loading state
-        messageContainer.innerHTML = '';
-        const originalText = this.innerHTML;
-        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
-        this.classList.add('disabled');
-
-        try {
-            const url = new URL(this.dataset.url, window.location.origin);
-            url.searchParams.append('year', currentYear.toString());
-            url.searchParams.append('month', currentMonth.toString());
-            // Send request to Django endpoint
-            const response = await fetch(url);
-
-            if (!response.ok) {
-                throw new Error(`Server error: ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            // Show success message
-            messageContainer.innerHTML = `
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <strong>Success!</strong> The archive named <b>${data.filename}</b> was created successfully.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>`;
-            loadFileList();
-
-        } catch (error) {
-            console.error("Archive creation failed:", error);
-
-            // Show error message
-            messageContainer.innerHTML = `
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <strong>Failed!</strong> There was an error creating the archive.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>`;
-        } finally {
-            // Reset the button
-            this.innerHTML = originalText;
-            this.classList.remove('disabled');
-        }
-    });
 
     exportDayBtn.addEventListener('click', async function(event) {
         // Stop the browser from following the link
@@ -252,10 +159,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if(!currentDay){
                 throw new Error("Current day is not set!");
             }
+            const selectedTime = document.getElementById('timeSelect').value;
             const url = new URL(this.dataset.url, window.location.origin);
             url.searchParams.append('year', currentYear.toString());
             url.searchParams.append('month', currentMonth.toString());
             url.searchParams.append('day', currentDay.toString());
+            if(selectedTime !== ""){
+                url.searchParams.append('hour', selectedTime);
+            }
             // Send request to Django endpoint
             const response = await fetch(url);
 
