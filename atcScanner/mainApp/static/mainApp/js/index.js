@@ -109,7 +109,7 @@ function get_recs(sortKey){
                             <td>${rec.freq} MHz</td>
                             <td>${rec.code}</td>
                             <td class="${transcriptClass}"><div class="text-truncate" style="max-width: 250px; cursor: help" title="${rec.transcript}">${rec.transcript}</div></td>
-                            <td><a class="btn btn-primary" href="${rec.abs_url}">Detail</a></td>
+                            <td><a class="btn btn-primary" href="${rec.abs_url}">Detail</a><button class="btn btn-danger deleteBtn" data-filepath="${rec.file_path}">Delete</button></td>
                         </tr>
                     `;
                 }).join('');
@@ -520,6 +520,50 @@ document.getElementById('time-filter').addEventListener('change', async function
     } catch (error) {
         console.error("Error loading table data:", error);
         alert("Failed to refresh data. Please try again.");
+    }
+});
+
+// Delete button listener
+document.addEventListener('click', async function(event) {
+    // 1. Check if the clicked element (or its parent) has the 'deleteBtn' class
+    if (event.target.classList.contains('deleteBtn')) {
+        const btn = event.target;
+
+        // 2. Grab the specific file path from the button's data attribute
+        const filePath = btn.dataset.filepath;
+
+        // 3. Confirm before doing something destructive
+        if (!confirm('Are you sure you want to permanently delete this file?')) {
+            return;
+        }
+
+        // 4. Show loading state
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+        btn.disabled = true;
+
+        try {
+            // 5. Send the fetch request
+            // encodeURIComponent ensures spaces/slashes in the file path don't break the URL
+            const url = `/api/delete_file?file_path=${encodeURIComponent(filePath)}`;
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`Server responded with ${errorData.error}`);
+            }
+
+            // 6. Success! Instantly remove the entire row (<tr>) from the HTML table
+            btn.closest('tr').remove();
+
+        } catch (error) {
+            console.error("Failed to delete file:", error);
+            alert("Error: Could not delete the file. Check the server logs.");
+
+            // 7. Reset the button if it failed
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
     }
 });
 

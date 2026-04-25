@@ -39,6 +39,43 @@ def index(request):
     return render(request, 'index.html', {'recordings': recordings, 'years': years})
 
 
+def delete_rec(request):
+    fpath = request.GET.get('file_path')
+    if fpath is None:
+        return JsonResponse({'error': 'Invalid request!'}, status=400)
+    if not fpath.startswith('/data/out/'):
+        return JsonResponse({'error': 'Invalid file path!'}, status=400)
+    try:
+        os.remove(fpath)
+        os.remove(fpath.replace('.wav', '.json'))
+    except FileNotFoundError:
+        return JsonResponse({'error': 'File not found!'}, status=400)
+
+    except PermissionError:
+        return JsonResponse({'error': 'No permission to delete file!'}, status=400)
+
+    except IsADirectoryError:
+        return JsonResponse({'error': 'Invalid file path!'}, status=400)
+
+    except OSError as e:
+        # Catch-all for any other OS-level issues
+        return JsonResponse({'error': 'An unexpected OS error occurred!'}, status=400)
+
+    try:
+        Recording.objects.filter(file_path=fpath).delete()
+    except OperationalError:
+        logging.error(f'Database error occurred when deleting file {fpath}')
+    try:
+        Deleted.objects.create(
+            file_path=fpath,
+            reason=Deleted.DeletionReason.USER,
+            date=datetime.now()
+        )
+    except OperationalError:
+        logging.error('Database error occurred when inserting deletion log')
+    return JsonResponse({'message': 'File deleted successfully!'}, status=200)
+
+
 def get_monthly_snr(request):
     try:
         year = request.GET.get('year', datetime.now().year)

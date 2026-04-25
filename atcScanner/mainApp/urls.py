@@ -12,6 +12,7 @@ urlpatterns = [
     path('api/get_monthly_snr', views.get_monthly_snr, name='get_monthly_snr'),
     path('api/get_daily_snr', views.get_daily_snr, name='get_daily_snr'),
     path('api/export/list_files', views.get_export_archives, name='get_export_archives'),
+    path('api/delete_file', views.delete_rec, name='delete_rec'),
     path('settings/', views.settings, name='settings'),
     path('settins/conf_upload', views.upload_airband_config, name='upload_airband_config'),
     path('deleted_log/', views.deleted_log, name='deleted_log'),
