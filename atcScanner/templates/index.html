@@ -141,8 +141,26 @@ Homepage
                 <th class="sortable-header" data-sort="snr" style="cursor: pointer; min-width: 100px;">SNR <i class="bi bi-arrow-down-up text-muted"></i></th>
                 <th class="sortable-header" data-sort="duration" style="cursor: pointer;">Duration <i class="bi bi-arrow-down-up text-muted"></i></th>
                 <th class="sortable-header" data-sort="date" style="cursor: pointer;">Date <i class="bi bi-caret-down-fill"></i></th>
-                <th>Frequency</th>
-                <th>Airport code</th>
+                <th>Frequency
+                    <div class="input-group input-group-sm" style="min-width: 150px;">
+                            <span class="input-group-text bg-transparent border-0" id="filter-icon">
+                                <i class="bi bi-funnel"></i>
+                            </span>
+                            <select id="freq-filter" class="form-select bg-transparent" aria-describedby="filter-icon">
+                                <option value=""></option>
+                            </select>
+                    </div>
+                </th>
+                <th>Airport code
+                    <div class="input-group input-group-sm" style="min-width: 150px;">
+                            <span class="input-group-text bg-transparent border-0" id="filter-icon">
+                                <i class="bi bi-funnel"></i>
+                            </span>
+                            <select id="code-filter" class="form-select bg-transparent" aria-describedby="filter-icon">
+                                <option value=""></option>
+                            </select>
+                    </div>
+                </th>
                 <th>Transcript</th>
                 <th></th>
             </tr>

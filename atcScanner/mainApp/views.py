@@ -138,6 +138,17 @@ def get_daily_snr(request):
     return response
 
 
+def get_freqs_codes(request):
+    try:
+        unique_freqs = Recording.objects.values_list('freq', flat=True).distinct()
+        freq_list = list(unique_freqs)
+        unique_codes = Recording.objects.values_list('code', flat=True).distinct()
+        code_list = list(unique_codes)
+        return JsonResponse({'freq_list': freq_list, 'code_list': code_list}, status=200)
+    except OperationalError:
+        return JsonResponse({'freq_list': [], 'code_list': []}, status=500)
+
+
 def _parse_json_files(json_files):
     # Reads JSON metadata in case the db fails
     parsed_data = []
@@ -223,6 +234,8 @@ def get_recs(request):
     sort_key = request.GET.get('sort')
     filter_date = request.GET.get('filter_date')
     filter_hour = request.GET.get('filter_hour')
+    filter_freq = request.GET.get('freq')
+    filter_code = request.GET.get('code')
 
     try:
         page_nr = int(request.GET.get('page', 1))
@@ -251,6 +264,10 @@ def get_recs(request):
             recordings = recordings.filter(date__date=filter_date)
         if filter_hour:
             recordings = recordings.filter(date__hour=filter_hour)
+        if filter_freq:
+            recordings = recordings.filter(freq=filter_freq)
+        if filter_code:
+            recordings = recordings.filter(code=filter_code)
 
         recordings = recordings.order_by(sort)
         total_recs = len(recordings)

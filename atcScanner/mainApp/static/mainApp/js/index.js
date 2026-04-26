@@ -27,6 +27,9 @@ let dailyChart = null;
 
 // Fallback mode flag, if true, there are problems with database and data is read directly from system disk
 let isFallback = false;
+// Filter by frequency
+let selectedFreq = "";
+let selectedCode = "";
 
 /*
 Get recordings from backend
@@ -45,6 +48,12 @@ function get_recs(sortKey){
     }
     if(filter_hour){
         url.searchParams.append('filter_hour', filter_hour);
+    }
+    if(selectedFreq !== ""){
+        url.searchParams.append('freq', selectedFreq);
+    }
+    if(selectedCode !== ""){
+        url.searchParams.append('code', selectedCode);
     }
 
     fetch(url)
@@ -75,8 +84,18 @@ function get_recs(sortKey){
         .then(data => {
             if(data.data.length === 0){
                 // When there are no data, let the user know
-                document.getElementById('rec-table').style.display = "none";
-                document.getElementById('empty-message').style.display = "block";
+                const tableEl = document.getElementById('rec-table-content');
+                tableEl.innerHTML = "";
+                const emptyRow = document.createElement('td');
+                emptyRow.setAttribute('colspan', '8');
+                emptyRow.innerHTML = "No recordings were found.";
+                tableEl.appendChild(emptyRow);
+
+                document.querySelectorAll('.jump-to-page-input').forEach(el => el.value = 1);
+                document.querySelectorAll('.total-pages-info').forEach(el => el.textContent = `of 1`);
+                document.querySelectorAll('.prev-page-btn').forEach(el => el.disabled = true);
+                document.querySelectorAll('.next-page-btn').forEach(el => el.disabled = true);
+                document.getElementById('total-recs').innerHTML = `Total recordings (with current filters): <b>0</b>`;
             }
             else{
                 if(isFallback){
@@ -404,6 +423,69 @@ async function renderCalendar(year, month, selectedDay = null) {
     }
 }
 
+// Function to fetch frequencies and populate the dropdown
+async function loadFrequencies() {
+    const freqSelect = document.getElementById('freq-filter');
+    const codeSelect = document.getElementById('code-filter');
+
+    // Safety check: Make sure the select element actually exists on this page
+    if (!freqSelect) return;
+
+    try {
+        // 1. Fetch the data from your Django endpoint (Update this URL!)
+        const response = await fetch('/api/get_freqs_codes');
+
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+
+        // 2. Parse the JSON response
+        const data = await response.json();
+
+        // Optional: Keep the default "All" or "Select one..." option if you have it in HTML,
+        // otherwise you can clear the dropdown first with: freqSelect.innerHTML = '';
+
+        // 3. Loop through the array inside the 'frequencies' key
+        data.freq_list.forEach(frequency => {
+            // Create a brand new <option> element
+            const option = document.createElement('option');
+
+            // Set the background value that will be sent to your server
+            option.value = frequency;
+
+            // Format the text the user actually sees (128_100MHz -> 128.100 MHz)
+            option.textContent = `${frequency.toFixed(3)} MHz`;
+
+            // Attach the new option to your select dropdown
+            freqSelect.appendChild(option);
+        });
+
+        data.code_list.forEach(code => {
+            // Create a brand new <option> element
+            const option = document.createElement('option');
+
+            // Set the background value that will be sent to your server
+            option.value = code;
+
+            // Format the text the user actually sees (128_100MHz -> 128.100 MHz)
+            option.textContent = code;
+
+            // Attach the new option to your select dropdown
+            codeSelect.appendChild(option);
+        });
+
+    } catch (error) {
+        console.error("Failed to load frequencies:", error);
+
+        // Optional UX: Let the user know it failed
+        const errorOption = document.createElement('option');
+        errorOption.value = "";
+        errorOption.textContent = "Error loading frequencies";
+        errorOption.disabled = true;
+        freqSelect.appendChild(errorOption);
+    }
+}
+
 // Button Listeners to change months
 document.getElementById('prev-month').addEventListener('click', () => {
     currentMonth--;
@@ -581,6 +663,18 @@ document.querySelectorAll('.jump-to-page-input').forEach(input => {
     });
 });
 
+document.getElementById('freq-filter').addEventListener('change', function (){
+    selectedFreq = this.value;
+    const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
+    get_recs(apiSortKey);
+});
+
+document.getElementById('code-filter').addEventListener('change', function (){
+    selectedCode = this.value;
+    const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
+    get_recs(apiSortKey);
+});
+
 // Load the initial calendar on page load
 const urlParams = new URLSearchParams(window.location.search);
 const targetDate = urlParams.get('date');
@@ -626,4 +720,6 @@ document.addEventListener('DOMContentLoaded', () => {
     yearSelector.addEventListener('change', (e) => {
         loadMonthlyChart(currentYear, currentMonth);
     });
+
+    loadFrequencies();
 });
