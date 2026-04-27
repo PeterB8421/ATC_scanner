@@ -207,8 +207,6 @@ async function loadFileList() {
     const tableBody = document.getElementById('export-table-content');
 
     try {
-        // 2. Fetch the data from your Django URL
-        // (Make sure to include the trailing slash if Django expects it!)
         const response = await fetch('/api/export/list_files');
 
         if (!response.ok) {
@@ -217,99 +215,108 @@ async function loadFileList() {
 
         const data = await response.json();
 
-        // Assume the backend sends { "files": ["file1.zip", "file2.zip"] }
+        // The backend now sends an array of objects
         const files = data.files || [];
 
-        // 3. Clear the table body
         tableBody.innerHTML = '';
 
-        // 4. Handle the "Empty State" (No files found)
         if (files.length === 0) {
+            // Updated colspan to 3 to account for the new Size column
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="2" class="text-center text-muted py-3">
+                    <td colspan="3" class="text-center text-muted py-3">
                         No export files found.
                     </td>
                 </tr>`;
             return;
         }
 
-        // 5. Loop through the array and build the rows
-        files.forEach(filename => {
+        // Loop through the array of file objects
+        files.forEach(file => {
             const row = document.createElement('tr');
 
             // Filename Column
             const nameCell = document.createElement('td');
-            // Using textContent instead of innerHTML prevents XSS attacks!
-            nameCell.textContent = filename;
+            nameCell.textContent = file.filename;
 
-            // Actions Column (Download Button)
+            // Size Column
+            const sizeCell = document.createElement('td');
+            // Format the float with a label
+            sizeCell.textContent = `${file.size_mb} MB`;
+
+            // Actions Column
             const actionCell = document.createElement('td');
-            actionCell.className = "text-end"; // Aligns the button to the right
+            actionCell.className = "text-end";
+
+            // Download Button
+            actionCell.innerHTML = `
+                <a href="${file.path}" class="btn btn-sm btn-outline-primary" download="${file.filename}">
+                    Download
+                </a>
+            `;
+
+            // Delete Button
             const deleteBtn = document.createElement('button');
-            deleteBtn.className = "btn btn-sm btn-outline-danger";
-            // Store the URL in a data attribute
-            deleteBtn.dataset.url = `${window.location.origin}/export/delete?file=${filename}`;
+            deleteBtn.className = "btn btn-sm btn-outline-danger ms-2"; // ms-2 adds a little spacing between the buttons
+
+            deleteBtn.dataset.url = `${window.location.origin}/export/delete?file=${encodeURIComponent(file.path)}`;
             deleteBtn.textContent = 'Delete';
 
-            // 3. Attach the fetch logic directly to this specific Delete button!
             deleteBtn.addEventListener('click', async function(event) {
                 event.preventDefault();
 
-                // Show a loading spinner on the button
                 const originalText = this.textContent;
                 this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
                 this.disabled = true;
 
                 try {
-                    // Ping the Django URL
                     const response = await fetch(this.dataset.url);
 
                     if (!response.ok) {
-                        throw new Error(`Server error: ${response.status}`);
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || `Server error: ${response.status}`);
                     }
+
                     messageContainer.innerHTML = `
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
                         <strong>Success!</strong> File was successfully deleted!
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>`;
+
+                    // Reload the table
                     loadFileList();
 
                 } catch (error) {
                     console.error("Delete failed:", error);
                     messageContainer.innerHTML = `
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <strong>Error!</strong> There was an error trying to delete the file!
+                        <strong>Error!</strong> ${error.message}
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>`;
 
-                    // Revert the button if it failed
                     this.textContent = originalText;
                     this.disabled = false;
                 }
             });
 
-            // Assuming your files are served via a specific URL route (like /archive/)
-            actionCell.innerHTML = `
-                <a href="${filename}" class="btn btn-sm btn-outline-primary" download>
-                    Download
-                </a>
-            `;
+            // Append the delete button next to the download button
             actionCell.appendChild(deleteBtn);
 
-            // Put the cells in the row, and the row in the table
+            // Put the cells in the row
             row.appendChild(nameCell);
+            row.appendChild(sizeCell);
             row.appendChild(actionCell);
+
+            // Put the row in the table
             tableBody.appendChild(row);
         });
 
     } catch (error) {
         console.error("Failed to load file list:", error);
 
-        // Show Error State
         tableBody.innerHTML = `
             <tr>
-                <td colspan="2" class="text-center text-danger py-3">
+                <td colspan="3" class="text-center text-danger py-3">
                     Failed to load files. Please try again later.
                 </td>
             </tr>`;

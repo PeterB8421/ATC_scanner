@@ -4,7 +4,7 @@ import logging
 import os.path
 import math
 import re
-import shutil
+import zipfile
 
 from pathlib import Path
 from django.core.paginator import Paginator
@@ -736,17 +736,6 @@ def export_page(request):
     return render(request, 'export.html')
 
 
-import os
-import zipfile
-from datetime import datetime
-from django.http import JsonResponse
-
-import os
-import zipfile
-from datetime import datetime
-from django.http import JsonResponse
-
-
 def new_export(request):
     date = datetime.now()
     year = request.GET.get('year')
@@ -811,8 +800,28 @@ def get_export_archives(request):
     export_path = '/data/export'
     if not os.path.exists(export_path):
         return JsonResponse({'files': []}, status=200)
-    files = glob.glob(f'{export_path}/*.zip')
-    return JsonResponse({'files': files}, status=200)
+
+    file_paths = glob.glob(f'{export_path}/*.zip')
+
+    files_data = []
+    for file_path in file_paths:
+        # Get the raw size in bytes
+        size_bytes = os.path.getsize(file_path)
+
+        # Get size in MB
+        size_mb = round(size_bytes / (1024 * 1024), 2)
+
+        # Grab just the filename for cleaner UI display
+        filename = os.path.basename(file_path)
+
+        files_data.append({
+            'path'      : file_path,
+            'filename'  : filename,
+            'size_bytes': size_bytes,
+            'size_mb'   : size_mb
+        })
+
+    return JsonResponse({'files': files_data}, status=200)
 
 
 def delete_export_archive(request):
