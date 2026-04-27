@@ -44,9 +44,9 @@
                 </div>
             </div>
         </form>
-        <h3>Airport data</h3>
+        <h3>Channels</h3>
         {% for airport_name, airport in airport_data.items %}
-            <h4><span class="text-muted">Airport name:</span> {{ airport_name }}</h4>
+            <h4><span class="text-muted">Channel name:</span> {{ airport_name }}</h4>
             <p><span class="text-muted">Airport code:</span> {{ airport.code }}</p>
             <p><span class="text-muted">Frequency:</span> {{ airport.frequency }}</p>
             <p><span class="text-muted">Filename template:</span> {{ airport.template }}</p>

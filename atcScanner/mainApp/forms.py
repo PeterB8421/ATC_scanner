@@ -13,7 +13,7 @@ class SettingsForm(forms.Form):
     max_audio_len = forms.FloatField(min_value=0, label='Maximum audio length (in seconds)', help_text='Use 0 to process all files')
     snr_thres = forms.FloatField(label='SNR threshold', help_text='Files with SNR lower than this thershold will be automatically deleted')
     in_autodelete = forms.BooleanField(label='Delete input files (cs16/cf32) after processing?', required=False)
+    in_dated_subdirs = forms.BooleanField(label='Check this box if using dated subdirectories for input files (cs16/cf32)', required=False)
     country = forms.CharField(max_length=60, label='Country')
     location = forms.CharField(max_length=30, label='GPS location')
     center_freq = forms.FloatField(min_value=0, step_size=0.1, label='Center frequency')
-    airport_codes = forms.CharField(max_length=40, label='Airport codes')

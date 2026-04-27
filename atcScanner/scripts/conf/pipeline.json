@@ -1,16 +1,16 @@
 {
   "airport_codes": "LKTB",
-  "center_freq": 124.5,
-  "country": "Czech Republic",
-  "file_ext": ".cf32",
-  "in_autodelete": false,
-  "location": "49.25411,16.58154",
-  "max_audio_len": 35.0,
-  "min_audio_len": 5.0,
-  "script_name": "decode_cf32.sh",
-  "sleep_time": 5,
-  "snr_thres": -100.0,
   "airports": {
+    "LHBP": {
+      "code": "LHBP",
+      "frequency": 122.265,
+      "template": "LHBP_2_122_265Hz"
+    },
+    "LKCM_Tower": {
+      "code": "LKCM",
+      "frequency": 122.405,
+      "template": "LKCM_Tower_122_405MHz"
+    },
     "LKPR_Radar": {
       "code": "LKPR",
       "frequency": 127.35,
@@ -26,20 +26,21 @@
       "frequency": 127.125,
       "template": "LK_unk_127_125MHz"
     },
-    "LHBP": {
-      "code": "LHBP",
-      "frequency": 122.265,
-      "template": "LHBP_2_122_265Hz"
-    },
     "LOWW_Radar": {
       "code": "LOWW",
       "frequency": 125.175,
       "template": "LOWW_Radar_125_175MHz"
-    },
-    "LKCM_Tower": {
-      "code": "LKCM",
-      "frequency": 122.405,
-      "template": "LKCM_Tower_122_405MHz"
     }
-  }
+  },
+  "center_freq": 124.5,
+  "country": "Czech Republic",
+  "file_ext": ".cf32",
+  "in_autodelete": false,
+  "in_dated_subdirs": false,
+  "location": "49.25411,16.58154",
+  "max_audio_len": 35.0,
+  "min_audio_len": 5.0,
+  "script_name": "decode_cf32.sh",
+  "sleep_time": 5,
+  "snr_thres": -10.0
 }
