@@ -15,9 +15,10 @@ from datetime import datetime
 
 ACTIVE_PLUGINS = {
     # ASR API polling plugin
-    "asr_api_polling": {
-        "url": "http://host.docker.internal:11000"
-    },
+    # "asr_api_polling": {
+    # If ASR API is running on the same machine, use domain: http://host.docker.internal:11000
+    #     "url": "http://host.docker.internal:11000"
+    # },
     # ASR API webhook plugin
     # "asr_api_webhook": {
     #     "url": "http://host.docker.internal:11000"
@@ -88,14 +89,13 @@ def get_metadata_from_filepath(filepath, airport_data):
     Extracts the base filename from a full path and searches the
     airport configuration dictionary to find the matching metadata.
     """
-    # 1. Strip the directories to get just the file name
-    # e.g. "/home/pi/audio/LKPR_Radar_123.mp3" becomes "LKPR_Radar_123.mp3"
+    # Strip the directories, get just the file name
     filename = os.path.basename(filepath)
 
-    # 2. Loop through every configured airport
+    # Loop through every configured airport
     for identifier, metadata in airport_data.items():
 
-        # 3. Check if the clean filename starts with this identifier
+        # Check if the filename starts with this identifier
         if filename.startswith(identifier) or filename.startswith(metadata['template']):
             return metadata
 
@@ -109,6 +109,7 @@ def remove_output_files(output_filename):
     except Exception:
         pass
     os.remove(output_filename)
+
 
 # Processes a new raw file
 def process_file(input_file, settings):
@@ -287,8 +288,18 @@ def main():
             elapsed_time_sec = 0
             raw_files = glob.glob(os.path.join(input_files_path,  '*' + settings['file_ext']))
             logging.info('Raw files: ' + str(raw_files))
+            active_timer = False
+            if len(raw_files) != 0:
+                logging.debug('Start benchmark')
+                start_time = time.perf_counter()
+                active_timer = True
             for f in raw_files:
                 process_file(f, settings)
+            if active_timer:
+                logging.debug('End benchmark')
+                execution_time = time.perf_counter() - start_time
+                with open("/app/scripts/exec_time_log.txt", "a") as f:
+                    f.write(f"{execution_time}\n\n")
         # Sleep for 1 second to restart or shutdown quicker
         time.sleep(1)
         elapsed_time_sec += 1
