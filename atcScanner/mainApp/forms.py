@@ -1,3 +1,7 @@
+"""
+Author: Bc. Petr Balok
+"""
+
 from django import forms
 
 FILE_TYPES = [

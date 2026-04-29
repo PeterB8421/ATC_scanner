@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# This file was provided by the thesis supervisor
+# Edited by: Bc. Petr Balok
 file_in=$1
 file_out=$2
 

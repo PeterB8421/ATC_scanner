@@ -1,3 +1,6 @@
+/*
+Author: Bc. Petr Balok
+ */
 document.addEventListener("DOMContentLoaded", function() {
     // 1. Get the current URL path (e.g., "/settings/")
     const currentPath = window.location.pathname;

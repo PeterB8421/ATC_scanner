@@ -1,3 +1,7 @@
+"""
+Author: Bc. Petr Balok
+"""
+
 from django.urls import path
 from . import views
 

@@ -1,3 +1,6 @@
+/*
+Author: Bc. Petr Balok
+ */
 const today = new Date();
 let currentYear = today.getFullYear();
 let currentMonth = today.getMonth() + 1;

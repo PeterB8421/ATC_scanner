@@ -1,3 +1,7 @@
+"""
+Author: Bc. Petr Balok
+"""
+
 import os
 import sys
 import glob

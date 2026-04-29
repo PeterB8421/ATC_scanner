@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# This is edited version of decode_cs16.sh, which was provided by the theis supervisor
+# Edited by: Bc. Petr Balok
 cf32=$1
 file_out=$2
 file_out_raw="${file_out%.*}_RAW.wav"

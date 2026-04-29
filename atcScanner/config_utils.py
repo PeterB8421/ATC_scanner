@@ -1,3 +1,6 @@
+"""
+Author: Bc. Petr Balok
+"""
 import json
 
 

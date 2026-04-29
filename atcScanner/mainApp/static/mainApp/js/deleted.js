@@ -1,3 +1,6 @@
+/*
+Author: Bc. Petr Balok
+ */
 let currentPage = 1;
 
 function get_del_log(){

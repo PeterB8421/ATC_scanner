@@ -1,3 +1,7 @@
+"""
+Author: Bc. Petr Balok
+"""
+
 import logging
 import os
 import numpy as np
@@ -25,6 +29,12 @@ class SNR:
         self.snr_table = np.loadtxt('/app/scripts/SNR_table_-100_100.tab')
 
     def estimate_snr(self, audio):
+        """
+        This function was provided by the thesis supervisor.
+        And edited by Bc. Petr Balok.
+        :param audio: audio signal
+        :return: SNR estimate in dB
+        """
         # Remove DC Offset
         audio_float = audio - np.mean(audio)
 

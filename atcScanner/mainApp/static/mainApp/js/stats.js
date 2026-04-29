@@ -1,3 +1,6 @@
+/*
+Author: Bc. Petr Balok
+ */
 document.addEventListener("DOMContentLoaded", async function() {
     const errorContainer = document.getElementById('errors');
     errorContainer.innerHTML = '';

@@ -1,3 +1,7 @@
+"""
+Author: Bc. Petr Balok
+"""
+
 import json
 import logging
 import asyncio

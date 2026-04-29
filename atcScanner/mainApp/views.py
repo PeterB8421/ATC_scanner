@@ -1,3 +1,7 @@
+"""
+Author: Bc. Petr Balok
+"""
+
 import glob
 import json
 import logging
