@@ -10,15 +10,10 @@ services:
     volumes:
       - .:/app
       - shared:/app/shared
-# -----------------------------------
-#     If you want to use a different directory, change only the part before :
-#     Input file directory
-      - ./records:/data/in
-#     Output files directory
-      - ./audio_files:/data/out
-# -----------------------------------
+      - ${INPUT_DIR}:/data/in
+      - ${OUTPUT_DIR}:/data/out
       - ./scripts:/scripts
-      - ./exports:/data/export
+      - ${EXPORT_DIR}:/data/export
     container_name: django-docker
     ports:
       - "10000:10000"
@@ -44,13 +39,8 @@ services:
     volumes:
       - .:/app
       - shared:/app/shared
-# -----------------------------------
-#     If you want to use a different directory, change only the part before :
-#     Input file directory
-      - ./records:/data/in
-#     Output files directory
-      - ./audio_files:/data/out
-# -----------------------------------
+      - ${INPUT_DIR}:/data/in
+      - ${OUTPUT_DIR}:/data/out
       - ./scripts:/scripts
     container_name: pipeline
     restart: unless-stopped

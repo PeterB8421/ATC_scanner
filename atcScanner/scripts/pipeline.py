@@ -290,20 +290,15 @@ def main():
 
         if elapsed_time_sec >= settings['sleep_time']:
             elapsed_time_sec = 0
+            if settings['in_dated_subdirs']:
+                now = datetime.now()
+                input_files_path = f'/data/in/{now.strftime("%Y")}/{now.strftime("%m")}/{now.strftime("%d")}'
+                if not os.path.exists(input_files_path):
+                    logging.warning(f'Input file path does not exist! Path: {input_files_path}')
             raw_files = glob.glob(os.path.join(input_files_path,  '*' + settings['file_ext']))
             logging.info('Raw files: ' + str(raw_files))
-            active_timer = False
-            if len(raw_files) != 0:
-                logging.debug('Start benchmark')
-                start_time = time.perf_counter()
-                active_timer = True
             for f in raw_files:
                 process_file(f, settings)
-            if active_timer:
-                logging.debug('End benchmark')
-                execution_time = time.perf_counter() - start_time
-                with open("/app/scripts/exec_time_log.txt", "a") as f:
-                    f.write(f"{execution_time}\n\n")
         # Sleep for 1 second to restart or shutdown quicker
         time.sleep(1)
         elapsed_time_sec += 1

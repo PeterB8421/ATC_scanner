@@ -36,7 +36,7 @@
   "country": "Czech Republic",
   "file_ext": ".cf32",
   "in_autodelete": false,
-  "in_dated_subdirs": false,
+  "in_dated_subdirs": true,
   "location": "49.25411,16.58154",
   "max_audio_len": 35.0,
   "min_audio_len": 5.0,
