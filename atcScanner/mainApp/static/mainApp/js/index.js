@@ -578,6 +578,10 @@ document.getElementById('reload-table-btn').addEventListener('click', async func
     try {
         const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
         await get_recs(apiSortKey);
+        loadMonthlyChart(currentYear, currentMonth);
+        if(activeFilterDate){
+            loadDailyChart(activeFilterDate);
+        }
 
     } catch (error) {
         console.error("Error reloading table data:", error);
@@ -691,7 +695,7 @@ if(targetYear){
     currentYear = targetYear;
 }
 if(targetMonth){
-    currentMonth = targetMonth;
+    currentMonth = parseInt(targetMonth, 10).toString();
 }
 
 renderCalendar(currentYear, currentMonth, activeFilterDate);

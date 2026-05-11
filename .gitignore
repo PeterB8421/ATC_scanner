@@ -179,3 +179,8 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+atcScanner/records/
+atcScanner/audio_files/
+atcScanner/exports/
+ATC_transcriber/models/

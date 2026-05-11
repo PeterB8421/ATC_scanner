@@ -515,7 +515,7 @@ def upload_airband_config(request):
             json.dump(pipeline_config, f, indent=2)
 
         messages.success(request,
-                         f'Successfully extracted {len(extracted_airports)} airports and updated the pipeline configuration!')
+                         f'Successfully extracted {len(extracted_airports)} airports and updated the pipeline configuration! Click SAVE to apply changes!')
 
     except Exception as e:
         messages.error(request, f'Failed to process configuration file: {str(e)}')

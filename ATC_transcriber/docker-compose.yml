@@ -1,0 +1,7 @@
+services:
+  atctranscriber:
+    build: .
+    ports:
+      - "11000:11000"
+    volumes:
+      - ./models:/models
