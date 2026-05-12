@@ -5,16 +5,16 @@ document.addEventListener("DOMContentLoaded", async function() {
     const errorContainer = document.getElementById('errors');
     errorContainer.innerHTML = '';
     try {
-        const response = await fetch('/api/stats');
+        const response = await fetch('/api/stats'); // Get stats data from server
 
-        // Explicitly check if the server returned a 4xx or 5xx error
+        // Check for error
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
 
-        // Input file deletion reason chart
+        // File deletion reason chart
         const ctxDeletions = document.getElementById('deletionsChart').getContext('2d');
         new Chart(ctxDeletions, {
             type: 'doughnut',
@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", async function() {
             }
         });
 
-        // Total recordings per day and avg SNR
+        // Total recordings per day and average SNR chart
         const ctxTimeline = document.getElementById('timelineChart').getContext('2d');
         new Chart(ctxTimeline, {
             type: 'bar',
@@ -88,6 +88,7 @@ document.addEventListener("DOMContentLoaded", async function() {
 
         const ctxCombined = document.getElementById('totalFilesChart').getContext('2d');
 
+        // Processed and deleted files chart
         new Chart(ctxCombined, {
             type: 'bar',
             data: {
@@ -121,8 +122,8 @@ document.addEventListener("DOMContentLoaded", async function() {
             }
         });
 
+        // Recordings per airport code chart
         const ctxAirport = document.getElementById('recsPerCodeChart').getContext('2d');
-
         new Chart(ctxAirport, {
             type: 'bar',
             data: {
@@ -158,8 +159,8 @@ document.addEventListener("DOMContentLoaded", async function() {
             }
         });
 
+        // Total audio duration chart
         const ctxDuration = document.getElementById('totalDurationChart').getContext('2d');
-
         new Chart(ctxDuration, {
             type: 'bar',
             data: {

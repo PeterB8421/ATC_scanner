@@ -28,6 +28,7 @@ from config_utils import get_config
 
 
 def index(request):
+    """ Homepage """
     recordings = Recording.objects.order_by('-date')[:20]
     for rec in recordings:
         rec.file_name = os.path.basename(rec.file_path)
@@ -44,12 +45,16 @@ def index(request):
 
 
 def delete_rec(request):
+    """ Delete recording API endpoint """
     fpath = request.GET.get('file_path')
     if fpath is None:
+        # File path unspecified
         return JsonResponse({'error': 'Invalid request!'}, status=400)
     if not fpath.startswith('/data/out/'):
+        # Someone tried directory traversal
         return JsonResponse({'error': 'Invalid file path!'}, status=400)
     try:
+        # Remove file from system disk
         os.remove(fpath)
         os.remove(fpath.replace('.wav', '.json'))
     except FileNotFoundError:
@@ -66,10 +71,12 @@ def delete_rec(request):
         return JsonResponse({'error': 'An unexpected OS error occurred!'}, status=400)
 
     try:
+        # Remove database row
         Recording.objects.filter(file_path=fpath).delete()
     except OperationalError:
         logging.error(f'Database error occurred when deleting file {fpath}')
     try:
+        # Add row to deleted files log
         Deleted.objects.create(
             file_path=fpath,
             reason=Deleted.DeletionReason.USER,
@@ -81,6 +88,7 @@ def delete_rec(request):
 
 
 def get_monthly_snr(request):
+    """ Returns average SNR for every day for specified month """
     try:
         year = request.GET.get('year', datetime.now().year)
         month = request.GET.get('month', datetime.now().month)
@@ -102,6 +110,7 @@ def get_monthly_snr(request):
         response = JsonResponse({'labels': labels, 'data': data})
         response['X-Fallback-Mode'] = 'false'
     except OperationalError:
+        # If database error occurred, return fallback mode header
         labels = []
         data = []
         response = JsonResponse({'labels': labels, 'data': data})
@@ -111,6 +120,7 @@ def get_monthly_snr(request):
 
 
 def get_daily_snr(request):
+    """ Endpoint that returns average SNR for every hour in specified day """
     try:
         date = request.GET.get('date')
         date = parse_datetime(date)
@@ -135,6 +145,7 @@ def get_daily_snr(request):
         response = JsonResponse({"labels": labels, "data": data})
         response['X-Fallback-Mode'] = 'false'
     except OperationalError:
+        # If database error occurred, send fallback mode header
         labels = []
         data = []
         response = JsonResponse({"labels": labels, "data": data})
@@ -143,6 +154,7 @@ def get_daily_snr(request):
 
 
 def get_freqs_codes(request):
+    """ Endpoint that returns distinct frequencies from database  """
     try:
         unique_freqs = Recording.objects.values_list('freq', flat=True).distinct()
         freq_list = list(unique_freqs)
@@ -150,11 +162,12 @@ def get_freqs_codes(request):
         code_list = list(unique_codes)
         return JsonResponse({'freq_list': freq_list, 'code_list': code_list}, status=200)
     except OperationalError:
+        # On database error, return empty list
         return JsonResponse({'freq_list': [], 'code_list': []}, status=500)
 
 
 def _parse_json_files(json_files):
-    # Reads JSON metadata in case the db fails
+    """ Reads JSON metadata in case the db fails """
     parsed_data = []
     for j_file in json_files:
         try:
@@ -183,7 +196,7 @@ def _parse_json_files(json_files):
 
 
 def get_recs_from_disk(filter_date, sort_key):
-    # Read metadata files from disk in case of db error
+    """ Read metadata files from disk in case of db error """
     base_path = Path('/data/out')
     data = []
 
@@ -234,7 +247,7 @@ def get_recs_from_disk(filter_date, sort_key):
 
 
 def get_recs(request):
-    # API endpoint to retrieve recordings from db or disk
+    """ API endpoint to retrieve recordings from db or disk """
     sort_key = request.GET.get('sort')
     filter_date = request.GET.get('filter_date')
     filter_hour = request.GET.get('filter_hour')
@@ -244,8 +257,10 @@ def get_recs(request):
     try:
         page_nr = int(request.GET.get('page', 1))
     except ValueError:
+        # If provided page number wasn't int, reset to 1
         page_nr = 1
 
+    # Allowed database columns used to sort the data
     allowed_keys = {
         'snr': 'snr',
         '-snr': '-snr',
@@ -256,12 +271,14 @@ def get_recs(request):
     }
 
     if sort_key not in allowed_keys:
+        # Return error if specified key was not allowed
         return JsonResponse({
             'error': f'Invalid sort key: {sort_key}'
         }, status=400)
 
     sort = allowed_keys[sort_key]
     try:
+        # Try loading data from database at first
         recordings = Recording.objects.all()
 
         if filter_date:
@@ -315,6 +332,7 @@ def get_recs(request):
         return response
 
     except OperationalError:
+        # In case of database error, load data from system disk
         fallback_data = get_recs_from_disk(filter_date, sort_key)
 
         total_items = len(fallback_data)
@@ -344,19 +362,21 @@ def get_recs(request):
 
 
 def get_month_counts(request):
+    """ Endpoint that returns number of recordings for each day in specified month """
     year = request.GET.get('year')
     month = request.GET.get('month')
 
     day_counts = {}
 
     try:
+        # Try to retrieve counts from database
         recs = Recording.objects.filter(date__year=year, date__month=month).annotate(day=TruncDay('date')).values('day').annotate(count=Count('id'))
 
         for rec in recs:
             day_str = rec['day'].strftime('%Y-%m-%d')
             day_counts[day_str] = rec['count']
     except OperationalError:
-        # Fallback if there is db error
+        # Read from system disk if there is database error
         month_path = Path(f'/data/out/{year}/{month}')
 
         if month_path.exists() and month_path.is_dir():
@@ -371,15 +391,19 @@ def get_month_counts(request):
 
 
 def detail(request, year, month, day, fname=None, pk=None):
+    """ Detail page """
     if fname is None and pk is None:
+        # File path or id was not provided
         return HttpResponse('Incorrect URL', status=404)
     if pk is not None:
+        # If id was provided, load from database
         recording = get_object_or_404(Recording, pk=pk)
         recording.file_name = os.path.basename(recording.file_path)
     else:
+        # Otherwise load from system disk
         fpath = os.path.join('/data/out', year, month, day, fname)
         with open(fpath.replace('.wav', '.json'), 'r') as f:
-            metadata = json.load(f)
+            metadata = json.load(f)  # Load metadata
 
         kwargs = {
             'file_path': metadata['file_path'],
@@ -401,12 +425,15 @@ def detail(request, year, month, day, fname=None, pk=None):
 
 
 def settings(request):
+    """ Settings page """
     if request.method == "GET":
+        # User wants to render the page
         form = SettingsForm(get_config())
         airport_data = get_config().get('airports', [])
         return render(request, 'settings.html', {"form": form, 'airport_data': airport_data})
 
     elif request.method == "POST":
+        # User saved settings
         form = SettingsForm(request.POST)
 
         if form.is_valid():
@@ -423,7 +450,7 @@ def settings(request):
                 return render(request, 'settings.html', {'form': form})
             current_config = get_config()
 
-            current_config.update(form.cleaned_data)
+            current_config.update(form.cleaned_data)  # Update config JSON
 
             with open('/app/scripts/conf/pipeline.json', 'w') as f:
                 json.dump(current_config, f, indent=2, sort_keys=True)
@@ -431,16 +458,18 @@ def settings(request):
             messages.success(request, 'Settings saved, restarting pipeline service')
 
             with open('/app/shared/restart_pipeline.flag', 'w') as f:
-                f.write('restart')
+                f.write('restart')  # Send signal to pipeline service to reload settings
 
             return render(request, 'settings.html', {"form": form})
 
     else:
+        # Some other HTTP method was used
         return HttpResponse("Method Not Allowed", status=400)
 
 
 @require_POST
 def upload_airband_config(request):
+    """ Endpoint to load channels from RTL Airband config """
     if 'airband_config' not in request.FILES:
         messages.error(request, 'No file was provided.')
         return redirect('settings')
@@ -524,11 +553,13 @@ def upload_airband_config(request):
 
 
 def deleted_log(request):
+    """ Deleted files log page """
     deleted_records = Deleted.objects.all().order_by('date')
     return render(request, 'deleted.html', {"deleted_records": deleted_records})
 
 
 def get_del_log(request):
+    """ Endpoint to get deleted files log list """
     try:
         page_nr = int(request.GET.get('page', 1))
     except ValueError:
@@ -572,6 +603,7 @@ def get_del_log(request):
 
 
 def get_deletion_reasons(request):
+    """ Endpoint to get distinct reasons for deletion """
     reasons_list = []
 
     for value, label in Deleted.DeletionReason.choices:
@@ -586,6 +618,7 @@ def get_deletion_reasons(request):
 @csrf_exempt
 @require_POST
 def receive_transcription(request):
+    """ Endpoint to receive transcription from ATC_transcriber container """
     try:
         data = json.loads(request.body)
 
@@ -640,10 +673,12 @@ def receive_transcription(request):
 
 
 def stats(request):
+    """ Statistics page """
     return render(request, "stats.html")
 
 
 def get_stats(request):
+    """ Endpoint to get data for charts on statistics page """
     # RECORDINGS PER DAY & AVERAGE SNR
     daily_stats = (
         Recording.objects
@@ -737,10 +772,12 @@ def get_stats(request):
 
 
 def export_page(request):
+    """ Export page """
     return render(request, 'export.html')
 
 
 def new_export(request):
+    """ Endpoint to create new export archive """
     date = datetime.now()
     year = request.GET.get('year')
     month = request.GET.get('month')
@@ -748,6 +785,7 @@ def new_export(request):
     hour = request.GET.get('hour')
 
     if not all([year, month, day]):
+        # If date wasn't specified, return error
         return JsonResponse({"error": "Year, month, and day are required"}, status=400)
 
     # Pad the numbers with zeros just in case the frontend sends "4" instead of "04"
@@ -757,6 +795,7 @@ def new_export(request):
     export_path = f'/data/out/{year}/{padded_month}/{padded_day}'
 
     if not os.path.exists(export_path):
+        # If export path does not exist, return error
         return JsonResponse({"error": "No data found for this date"}, status=404)
 
     prefix = f'DAY-{year}-{padded_month}-{padded_day}'
@@ -777,9 +816,8 @@ def new_export(request):
             for root, dirs, files in os.walk(export_path):
                 for file in files:
 
-                    # 🌟 THE NEW FILTERING LOGIC 🌟
                     if hour is not None:
-                        # Build the exact string: e.g., "_20260425_14"
+                        # Filename with hour
                         time_marker = f"_{year}{padded_month}{padded_day}_{padded_hour}"
 
                         # If that exact sequence isn't in the filename, skip it
@@ -801,8 +839,10 @@ def new_export(request):
 
 
 def get_export_archives(request):
+    """ Endpoint to get list of created archives """
     export_path = '/data/export'
     if not os.path.exists(export_path):
+        # If export directory does not exist, return error
         return JsonResponse({'files': []}, status=200)
 
     file_paths = glob.glob(f'{export_path}/*.zip')
@@ -829,10 +869,13 @@ def get_export_archives(request):
 
 
 def delete_export_archive(request):
+    """ Endpoint to delete export archive """
     file_path = request.GET.get('file')
     if not file_path:
+        # File path was not provided
         return JsonResponse({'error': "No file path provided!"}, status=400)
     if not file_path.startswith('/data/export/'):
+        # Someone tried directory traversal
         return JsonResponse({'error': "Invalid file path!"}, status=400)
     if os.path.exists(file_path):
         os.remove(file_path)

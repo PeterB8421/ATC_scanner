@@ -5,10 +5,12 @@ import WaveSurfer from 'https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.esm.js
 import Spectrogram from 'https://unpkg.com/wavesurfer.js@7/dist/plugins/spectrogram.esm.js'
 
 /*
+============================
 Global variables
+============================
  */
 // Keep track of the current state globally
-let currentSortColumn = 'date';
+let currentSortColumn = 'date'; // Column selected for sorting
 let isDescending = true;
 
 // Get sortable headers
@@ -18,13 +20,14 @@ let activeFilterDate = null;
 // Hour filter
 let activeFilterHour = null;
 
-// Update the Calendar Click Listener
+// Calendar grid and clear button
 const calendarGrid = document.getElementById('calendar-grid');
 const clearButton = document.getElementById('clear-date');
+// Page counter
 let currentPage = 1;
 let totalPages = 1;
 
-// Graphs for average SNR
+// Graphs for average SNR (month and day)
 let monthlyChart = null;
 let dailyChart = null;
 
@@ -32,13 +35,20 @@ let dailyChart = null;
 let isFallback = false;
 // Filter by frequency
 let selectedFreq = "";
+// Filter by airport code
 let selectedCode = "";
 
 /*
+============================
 Get recordings from backend
+============================
  */
 function get_recs(sortKey){
-    // Get recordings via server API
+    /*
+     Get recordings via server API
+
+     sortKey - REQUIRED, name of column that should be used for sorting
+     */
     const url = new URL('/api/get_recs', window.location.origin);
     let filter_date = activeFilterDate; // Filter by selected date (null if not selected)
     let filter_hour = activeFilterHour; // Filter by selected hour (null if not selected)
@@ -67,9 +77,11 @@ function get_recs(sortKey){
                 })
             }
 
+            // Check if server returned error with database
             isFallback = response.headers.get('X-Fallback-Mode') === 'true';
             console.log("Fallback mode: ", isFallback);
             if(isFallback){
+                // Show fallback mode warnings
                 document.getElementById('dailyChart').style.display = "none";
                 document.getElementById('empty-message-day').style.display = "none";
                 document.getElementById('not-selected-message').style.display = "none";
@@ -80,6 +92,7 @@ function get_recs(sortKey){
             const warnBanner = document.getElementById("fallback-warning");
 
             if(warnBanner){
+                // Another fallback mode warning
                 warnBanner.style.display = isFallback ? 'flex' : 'none';
             }
             return response.json();
@@ -101,24 +114,29 @@ function get_recs(sortKey){
                 document.getElementById('total-recs').innerHTML = `Total recordings (with current filters): <b>0</b>`;
             }
             else{
+                // If there are data, populate the table
                 if(isFallback){
-                    activeFilterDate = data.data[0].date.split("T")[0];
-                    currentYear = activeFilterDate.split("-")[0];
-                    currentMonth = activeFilterDate.split("-")[1];
-                    renderCalendar(currentYear, currentMonth, activeFilterDate);
+                    // In fallback mode, only data for newest day was returned
+                    activeFilterDate = data.data[0].date.split("T")[0]; // Parse date string from first item
+                    currentYear = activeFilterDate.split("-")[0]; // Set current year
+                    currentMonth = activeFilterDate.split("-")[1]; // Set current month
+                    renderCalendar(currentYear, currentMonth, activeFilterDate); // Highlight returned day
                 }
-                document.getElementById('rec-table').style.display = "block";
-                document.getElementById('empty-message').style.display = "none";
+                document.getElementById('rec-table').style.display = "block"; // Show recordings table
+                document.getElementById('empty-message').style.display = "none"; // Hide empty message
                 const tableEl = document.getElementById('rec-table-content');
                 tableEl.innerHTML = "";
 
                 const rows = data.data.map(rec => {
-                    let transcriptClass = "";
+                    /*
+                    Iterate over returned data and create table rows
+                     */
+                    let transcriptClass = ""; // Add color background to transcript cell
                     if(rec.transcript === "[Processing...]"){
-                        transcriptClass = "table-info";
+                        transcriptClass = "table-info"; // Light blue if transcript is processing
                     }
                     else if(rec.transcript === "[Transcription failed]"){
-                        transcriptClass = "table-danger";
+                        transcriptClass = "table-danger"; // Red if transcript failed
                     }
                     // Create all rows at once, so the page does not have to re-render for each row
                     return `
@@ -135,7 +153,7 @@ function get_recs(sortKey){
                         </tr>
                     `;
                 }).join('');
-                tableEl.innerHTML = rows;
+                tableEl.innerHTML = rows; // Set rows HTML elements to table body
 
                 // Add spectrograms to each row
                 const audioEls = tableEl.querySelectorAll("tr");
@@ -157,14 +175,15 @@ function get_recs(sortKey){
                         ],
                     })
                 })
+                // Page navigator
                 const pageStats = data.pagination;
                 totalPages = pageStats.total_pages;
 
-                document.querySelectorAll('.jump-to-page-input').forEach(el => el.value = pageStats.current_page);
-                document.querySelectorAll('.total-pages-info').forEach(el => el.textContent = `of ${pageStats.total_pages}`);
-                document.querySelectorAll('.prev-page-btn').forEach(el => el.disabled = !pageStats.has_previous);
-                document.querySelectorAll('.next-page-btn').forEach(el => el.disabled = !pageStats.has_next);
-                document.getElementById('total-recs').innerHTML = `Total recordings (with current filters): <b>${pageStats.total_recs}</b>`;
+                document.querySelectorAll('.jump-to-page-input').forEach(el => el.value = pageStats.current_page); // Page number input field
+                document.querySelectorAll('.total-pages-info').forEach(el => el.textContent = `of ${pageStats.total_pages}`); // Total pages text
+                document.querySelectorAll('.prev-page-btn').forEach(el => el.disabled = !pageStats.has_previous); // Previous page button (disable if last page)
+                document.querySelectorAll('.next-page-btn').forEach(el => el.disabled = !pageStats.has_next); // Next page button (disable if first page)
+                document.getElementById('total-recs').innerHTML = `Total recordings (with current filters): <b>${pageStats.total_recs}</b>`; // Count of all recordings text
             }
         })
         .catch(error => {
@@ -178,7 +197,14 @@ function get_recs(sortKey){
 }
 
 async function loadMonthlyChart(year, month) {
+    /*
+    Load chart for average SNR for selected month and year
+
+    year - REQUIRED
+    month - REQUIRED
+     */
     if(isFallback){
+        // Show warning in fallback mode
         document.getElementById('monthlyChart').style.display = "none";
         document.getElementById('empty-message-month').style.display = "none";
         document.getElementById('not-selected-message').style.display = "none";
@@ -186,12 +212,13 @@ async function loadMonthlyChart(year, month) {
         return;
     }
     document.getElementById('fallback-message-month').style.display = "none";
-    const response = await fetch(`/api/get_monthly_snr?year=${year}&month=${month}`);
+    const response = await fetch(`/api/get_monthly_snr?year=${year}&month=${month}`); // Get average SNR data for days in selected month and year
     const data = await response.json();
 
     isFallback = response.headers.get('X-Fallback-Mode') === 'true';
     console.log("Fallback mode: ", isFallback);
     if(isFallback){
+        // Show warning when in fallback mode
         document.getElementById('monthlyChart').style.display = "none";
         document.getElementById('empty-message-month').style.display = "none";
         document.getElementById('not-selected-message').style.display = "none";
@@ -202,22 +229,25 @@ async function loadMonthlyChart(year, month) {
 
     const ctx = document.getElementById('monthlyChart').getContext('2d');
     const emptyMsg = document.getElementById('empty-message-month');
-    const selectedMonth = document.getElementById('month-select').selectedOptions[0].text;
-    const selectedYear = document.getElementById('year-select').selectedOptions[0].text;
-    document.getElementById('selectedMonthText').innerHTML = `${selectedMonth} ${selectedYear}`;
+    const selectedMonth = document.getElementById('month-select').selectedOptions[0].text; // Get month value from select element
+    const selectedYear = document.getElementById('year-select').selectedOptions[0].text; // Get year value from select element
+    document.getElementById('selectedMonthText').innerHTML = `${selectedMonth} ${selectedYear}`; // Set header text for the chart
 
     // Destroy previous chart instance if it exists
     if (monthlyChart) monthlyChart.destroy();
 
     if(data.labels.length === 0){
+        // If there is no data for selected month, show empty message
         document.getElementById('monthlyChart').style.display = "none";
         emptyMsg.style.display = "block";
     }
     else{
+        // Otherwise show the chart
         document.getElementById('monthlyChart').style.display = "block";
         emptyMsg.style.display = "none";
     }
 
+    // Average SNR per day chart
     monthlyChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -238,9 +268,14 @@ async function loadMonthlyChart(year, month) {
     });
 }
 
-// 3. Fetch and render Daily/Hourly Chart
 async function loadDailyChart(date) {
+    /*
+    Load average hourly SNR chart for selected day
+
+    date - REQUIRED, selected date string
+     */
     if(isFallback){
+        // Show warning in fallback mode
         document.getElementById('dailyChart').style.display = "none";
         document.getElementById('empty-message-day').style.display = "none";
         document.getElementById('not-selected-message').style.display = "none";
@@ -249,19 +284,21 @@ async function loadDailyChart(date) {
     }
     document.getElementById('fallback-message-day').style.display = "none";
     if(!date){
+        // Show message when date was not selected (date === null)
         document.getElementById('dailyChart').style.display = "none";
         document.getElementById('empty-message-day').style.display = "none";
         document.getElementById('not-selected-message').style.display = "block";
         return;
     }
     document.getElementById('not-selected-message').style.display = "none";
-    document.getElementById('selectedDayText').innerHTML = date;
-    const response = await fetch(`/api/get_daily_snr?date=${date}`);
+    document.getElementById('selectedDayText').innerHTML = date; // Set chart header
+    const response = await fetch(`/api/get_daily_snr?date=${date}`); // Get data from server
     const data = await response.json();
 
     isFallback = response.headers.get('X-Fallback-Mode') === 'true';
     console.log("Fallback mode: ", isFallback);
     if(isFallback){
+        // Show warning in fallback mode
         document.getElementById('dailyChart').style.display = "none";
         document.getElementById('empty-message-day').style.display = "none";
         document.getElementById('not-selected-message').style.display = "none";
@@ -277,14 +314,17 @@ async function loadDailyChart(date) {
     if (dailyChart) dailyChart.destroy();
 
     if(data.labels.length === 0){
+        // If there is no data for selected date, show empty message
         document.getElementById('dailyChart').style.display = "none";
         emptyMsg.style.display = "block";
     }
     else{
+        // Otherwise show chart
         document.getElementById('dailyChart').style.display = "block";
         emptyMsg.style.display = "none";
     }
 
+    // Hourly average SNR chart
     dailyChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -308,10 +348,15 @@ async function loadDailyChart(date) {
 }
 
 /*
+============================
 Data sorting
+============================
  */
 
 sortHeaders.forEach(header => {
+    /*
+    Add click listeners for sortable table headers
+     */
     header.addEventListener('click', () => {
         // Clicked column to sort by
         const clickedColumn = header.getAttribute('data-sort');
@@ -336,17 +381,19 @@ sortHeaders.forEach(header => {
         const activeIcon = header.querySelector('i');
         activeIcon.className = isDescending ? "bi bi-caret-down-fill" : "bi bi-caret-up-fill";
 
-        // Build the API string
+        // Build the sort parameter string
         const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
 
-        currentPage = 1;
-        get_recs(apiSortKey);
+        currentPage = 1; // Reset page counter
+        get_recs(apiSortKey); // Reload the table
     });
 });
 
 
 /*
+============================
 Date filtering
+============================
  */
 const today = new Date();
 let currentYear = today.getFullYear();
@@ -358,43 +405,57 @@ const yearSelect = document.getElementById('year-select');
 // Fill the year select element
 const baseYear = today.getFullYear();
 for (let y = baseYear; y >= 2000; y--) {
+    // Add options for years from 2000 to current year
     const option = document.createElement('option');
     option.value = y;
     option.textContent = y;
     yearSelect.appendChild(option);
 }
 
-// Listeners for date change from select
 monthSelect.addEventListener('change', (e) => {
+    /*
+    Month select was changed, re-render the calendar
+     */
     currentMonth = parseInt(e.target.value, 10);
     renderCalendar(currentYear, currentMonth);
 });
 
 yearSelect.addEventListener('change', (e) => {
+    /*
+    Year select was changed, re-render the calendar
+     */
     currentYear = parseInt(e.target.value, 10);
     renderCalendar(currentYear, currentMonth);
 });
 
 async function renderCalendar(year, month, selectedDay = null) {
-    const grid = document.getElementById('calendar-grid');
+    /*
+    Render the calendar grid
+
+    year - REQUIRED
+    month - REQUIRED
+    selectedDay - OPTIONAL, highlights the day in this string, format YYYY-MM-DD
+     */
+    const grid = document.getElementById('calendar-grid'); // Calendar grid div
     grid.innerHTML = ''; // Clear existing calendar
 
-    document.getElementById('year-select').value = year;
-    document.getElementById('month-select').value = month;
+    document.getElementById('year-select').value = year; // Year value from year select
+    document.getElementById('month-select').value = month; // Month value from month select
 
     // Fetch the counts from Django
-    const paddedMonth = String(month).padStart(2, '0');
-    const response = await fetch(`/api/month_counts?year=${year}&month=${paddedMonth}`);
+    const paddedMonth = String(month).padStart(2, '0'); // Add leading zeroes to month
+    const response = await fetch(`/api/month_counts?year=${year}&month=${paddedMonth}`); // Get number of recordings for each day in month
     const countsData = await response.json();
 
     // Add Day of Week Headers
     const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     daysOfWeek.forEach(day => {
+        // Add days of month
         grid.innerHTML += `<div class="fw-bold text-muted">${day}</div>`;
     });
 
     let firstDayIndex = new Date(year, month - 1, 1).getDay();
-    firstDayIndex = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
+    firstDayIndex = firstDayIndex === 0 ? 6 : firstDayIndex - 1; // First weekday is Monday
     const daysInMonth = new Date(year, month, 0).getDate();
 
     // Pad the empty days before the 1st of the month
@@ -407,7 +468,7 @@ async function renderCalendar(year, month, selectedDay = null) {
         const paddedDay = String(day).padStart(2, '0');
         const dateString = `${year}-${paddedMonth}-${paddedDay}`;
 
-        // Check if API returned a count for this specific date string
+        // Check if API returned a count for this specific day
         const count = countsData[dateString] || 0;
 
         // If there are recordings, show a green badge. Otherwise, show nothing.
@@ -428,6 +489,9 @@ async function renderCalendar(year, month, selectedDay = null) {
 
 // Function to fetch frequencies and populate the dropdown
 async function loadFrequencies() {
+    /*
+    Loads options to frequency select to filter with
+     */
     const freqSelect = document.getElementById('freq-filter');
     const codeSelect = document.getElementById('code-filter');
 
@@ -435,52 +499,49 @@ async function loadFrequencies() {
     if (!freqSelect) return;
 
     try {
-        // 1. Fetch the data from your Django endpoint (Update this URL!)
+        // Fetch distinct frequencies from server
         const response = await fetch('/api/get_freqs_codes');
 
         if (!response.ok) {
             throw new Error(`Server error: ${response.status}`);
         }
 
-        // 2. Parse the JSON response
+        // Parse the JSON response
         const data = await response.json();
 
-        // Optional: Keep the default "All" or "Select one..." option if you have it in HTML,
-        // otherwise you can clear the dropdown first with: freqSelect.innerHTML = '';
-
-        // 3. Loop through the array inside the 'frequencies' key
+        // Loop through the array inside the 'frequencies' key
         data.freq_list.forEach(frequency => {
-            // Create a brand new <option> element
+            // Create a new <option> element
             const option = document.createElement('option');
 
-            // Set the background value that will be sent to your server
+            // Set the value that will be sent to the server
             option.value = frequency;
 
-            // Format the text the user actually sees (128_100MHz -> 128.100 MHz)
+            // Format the text the user actually sees
             option.textContent = `${frequency.toFixed(3)} MHz`;
 
-            // Attach the new option to your select dropdown
+            // Attach the new option to your select element
             freqSelect.appendChild(option);
         });
 
         data.code_list.forEach(code => {
-            // Create a brand new <option> element
+            // Create a new option element
             const option = document.createElement('option');
 
-            // Set the background value that will be sent to your server
+            // Set the value that will be sent to the server
             option.value = code;
 
-            // Format the text the user actually sees (128_100MHz -> 128.100 MHz)
+            // Format the text the user actually sees
             option.textContent = code;
 
-            // Attach the new option to your select dropdown
+            // Attach the new option to your select element
             codeSelect.appendChild(option);
         });
 
     } catch (error) {
         console.error("Failed to load frequencies:", error);
 
-        // Optional UX: Let the user know it failed
+        // Let the user know it failed
         const errorOption = document.createElement('option');
         errorOption.value = "";
         errorOption.textContent = "Error loading frequencies";
@@ -505,16 +566,20 @@ document.getElementById('next-month').addEventListener('click', () => {
 });
 
 calendarGrid.addEventListener('click', (event) => {
-    const clickedDay = event.target.closest('.cal-day');
+    /*
+    Calendar grid click listener
+     */
+    const clickedDay = event.target.closest('.cal-day'); // Get clicked day element
     if (!clickedDay) return;
 
-    activeFilterDate = clickedDay.getAttribute('data-date');
-    loadDailyChart(activeFilterDate);
-    document.getElementById('selected-day-message').style.display = "flex";
+    activeFilterDate = clickedDay.getAttribute('data-date'); // Set selected day
+    loadDailyChart(activeFilterDate); // Render hourly average SNR chart
+    document.getElementById('selected-day-message').style.display = "flex"; // Show selected day text
     document.getElementById('selectedDay').innerHTML = `${activeFilterDate}`;
 
     // Highlight the clicked day
     document.querySelectorAll('.cal-day').forEach(day => {
+        // Removed previously selected day (if there was any)
         day.classList.remove('bg-primary', 'text-white');
     });
     clickedDay.classList.add('bg-primary', 'text-white');
@@ -523,17 +588,17 @@ calendarGrid.addEventListener('click', (event) => {
     clearButton.style.display = 'block';
 
     const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
-    currentPage = 1;
-    get_recs(apiSortKey);
+    currentPage = 1; // Reset page number
+    get_recs(apiSortKey); // Reload data table
 });
 
 // Update the Clear Button Listener
 clearButton.addEventListener('click', () => {
-    activeFilterDate = null;
-    activeFilterHour = null;
+    activeFilterDate = null; // Unselect day
+    activeFilterHour = null; // Unselect hour
     document.getElementById('selectedDayText').innerHTML = "selected day";
-    document.getElementById('selected-day-message').style.display = "none";
-    loadDailyChart(activeFilterDate);
+    document.getElementById('selected-day-message').style.display = "none"; // Hide selected day message
+    loadDailyChart(activeFilterDate); // Re-render hourly average SNR chart
 
     // Remove highlight from all calendar days
     document.querySelectorAll('.cal-day').forEach(day => {
@@ -544,11 +609,14 @@ clearButton.addEventListener('click', () => {
     clearButton.style.display = 'none';
 
     const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
-    currentPage = 1;
-    get_recs(apiSortKey);
+    currentPage = 1; // Reset page number
+    get_recs(apiSortKey); // Reload data in the table
 });
 
 document.querySelectorAll('.prev-page-btn').forEach(btn => {
+    /*
+    Load previous page
+     */
     btn.addEventListener('click', function() {
         currentPage--;
         const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
@@ -557,6 +625,9 @@ document.querySelectorAll('.prev-page-btn').forEach(btn => {
 });
 
 document.querySelectorAll('.next-page-btn').forEach(btn => {
+    /*
+    Load next page
+     */
     btn.addEventListener('click', function() {
         currentPage++;
         const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
@@ -577,9 +648,10 @@ document.getElementById('reload-table-btn').addEventListener('click', async func
 
     try {
         const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
-        await get_recs(apiSortKey);
-        loadMonthlyChart(currentYear, currentMonth);
+        await get_recs(apiSortKey); // Reload table
+        loadMonthlyChart(currentYear, currentMonth); // Reload daily average SNR chart
         if(activeFilterDate){
+            // If a day was selected, reload hourly SNR chart
             loadDailyChart(activeFilterDate);
         }
 
@@ -590,21 +662,25 @@ document.getElementById('reload-table-btn').addEventListener('click', async func
         btn.innerHTML = originalText;
         btn.disabled = false;
     }
-    renderCalendar(currentYear, currentMonth, activeFilterDate);
+    renderCalendar(currentYear, currentMonth, activeFilterDate); // Reload recording counts in calendar grid
 });
 
 document.getElementById('time-filter').addEventListener('change', async function() {
-
+    /*
+    Time filter select element changed
+     */
     try {
-        let selectedHour = document.getElementById('time-filter').value;
+        let selectedHour = document.getElementById('time-filter').value; // Get selected hour
         if(selectedHour === ""){
+            // If no hour was selected (option "-"), disable filter
             activeFilterHour = null;
         }
         else{
+            // Enable hour filter
             activeFilterHour = selectedHour;
         }
         const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
-        await get_recs(apiSortKey);
+        await get_recs(apiSortKey); // Reload table data
 
     } catch (error) {
         console.error("Error loading table data:", error);
@@ -614,26 +690,25 @@ document.getElementById('time-filter').addEventListener('change', async function
 
 // Delete button listener
 document.addEventListener('click', async function(event) {
-    // 1. Check if the clicked element (or its parent) has the 'deleteBtn' class
+    // Check if the clicked element (or its parent) has the 'deleteBtn' class
     if (event.target.classList.contains('deleteBtn')) {
         const btn = event.target;
 
-        // 2. Grab the specific file path from the button's data attribute
+        // Grab the specific file path from the button's data attribute
         const filePath = btn.dataset.filepath;
 
-        // 3. Confirm before doing something destructive
+        // Confirm dialog (to prevent accidental deletions)
         if (!confirm('Are you sure you want to permanently delete this file?')) {
             return;
         }
 
-        // 4. Show loading state
+        // Show loading state
         const originalText = btn.innerHTML;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
         btn.disabled = true;
 
         try {
-            // 5. Send the fetch request
-            // encodeURIComponent ensures spaces/slashes in the file path don't break the URL
+            // Send the request
             const url = `/api/delete_file?file_path=${encodeURIComponent(filePath)}`;
             const response = await fetch(url);
 
@@ -642,14 +717,14 @@ document.addEventListener('click', async function(event) {
                 throw new Error(`Server responded with ${errorData.error}`);
             }
 
-            // 6. Success! Instantly remove the entire row (<tr>) from the HTML table
+            // Success: remove the entire row from the table
             btn.closest('tr').remove();
 
         } catch (error) {
             console.error("Failed to delete file:", error);
             alert("Error: Could not delete the file. Check the server logs.");
 
-            // 7. Reset the button if it failed
+            // Reset the button if it failed
             btn.innerHTML = originalText;
             btn.disabled = false;
         }
@@ -657,13 +732,20 @@ document.addEventListener('click', async function(event) {
 });
 
 document.querySelectorAll('.jump-to-page-input').forEach(input => {
+    /*
+    Add event listener to both page navigations
+     */
     input.addEventListener('change', function(e) {
+        /*
+        User typed a page number to number page input
+         */
         let targetPage = parseInt(e.target.value);
 
         if (targetPage >= 1 && targetPage <= totalPages) {
-            currentPage = targetPage;
+            // If page is in total page range
+            currentPage = targetPage; // Set current page
             const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
-            get_recs(apiSortKey);
+            get_recs(apiSortKey); // Realod the table
         } else {
             e.target.value = currentPage;
         }
@@ -671,12 +753,18 @@ document.querySelectorAll('.jump-to-page-input').forEach(input => {
 });
 
 document.getElementById('freq-filter').addEventListener('change', function (){
+    /*
+    Frequency filter changed
+     */
     selectedFreq = this.value;
     const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
     get_recs(apiSortKey);
 });
 
 document.getElementById('code-filter').addEventListener('change', function (){
+    /*
+    Airport code filter changed
+     */
     selectedCode = this.value;
     const apiSortKey = isDescending ? `-${currentSortColumn}` : currentSortColumn;
     get_recs(apiSortKey);
@@ -684,22 +772,22 @@ document.getElementById('code-filter').addEventListener('change', function (){
 
 // Load the initial calendar on page load
 const urlParams = new URLSearchParams(window.location.search);
-const targetDate = urlParams.get('date');
-const targetYear = urlParams.get('year');
-const targetMonth = urlParams.get('month');
+const targetDate = urlParams.get('date'); // Select a day from URL params
+const targetYear = urlParams.get('year'); // Set year from URL params
+const targetMonth = urlParams.get('month'); // Set month from URL params
 if(targetDate){
-    activeFilterDate = targetDate;
-    clearButton.style.display = 'block';
+    activeFilterDate = targetDate; // Enable date filter
+    clearButton.style.display = 'block'; // Show clear button
 }
 if(targetYear){
-    currentYear = targetYear;
+    currentYear = targetYear; // Set specified year
 }
 if(targetMonth){
-    currentMonth = parseInt(targetMonth, 10).toString();
+    currentMonth = parseInt(targetMonth, 10).toString(); // Set specified month
 }
 
-renderCalendar(currentYear, currentMonth, activeFilterDate);
-get_recs('-date');
+renderCalendar(currentYear, currentMonth, activeFilterDate); // Initialize the calendar grid
+get_recs('-date'); // Initialize the recordings table
 
 document.addEventListener('DOMContentLoaded', () => {
     // Set input default values
@@ -709,6 +797,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load initial charts
     loadMonthlyChart(yearSelector.value, monthSelector.value);
     if(activeFilterDate){
+        // If a date was specified, loud hourly average SNR chart
         loadDailyChart(activeFilterDate);
         document.getElementById('selected-day-message').style.display = "flex";
         document.getElementById('selectedDay').innerHTML = `${activeFilterDate}`;
@@ -719,14 +808,19 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('dailyChart').style.display = "none";
     }
 
-    // 5. Add Event Listeners for when the user changes the dates
     monthSelector.addEventListener('change', (e) => {
+        /*
+        Reload daily average SNR chart when month changes
+         */
         loadMonthlyChart(currentYear, currentMonth);
     });
 
     yearSelector.addEventListener('change', (e) => {
+        /*
+        Reload daily average SNR when year changed
+         */
         loadMonthlyChart(currentYear, currentMonth);
     });
 
-    loadFrequencies();
+    loadFrequencies(); // Load frequency options
 });

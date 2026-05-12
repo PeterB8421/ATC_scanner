@@ -17,6 +17,7 @@
 
 {% block content %}
     <main class="container">
+        <!-- PIPELINE SETTINGS FORM -->
         <div class="card shadow-sm mb-4">
                 <div class="card-body">
                     <h2>Settings for ATC scanner</h2>
@@ -28,6 +29,7 @@
                 </div>
         </div>
         <br>
+        <!-- AIRBAND CONFIG FILE UPLOAD FORM -->
         <form method="post" action="{% url 'upload_airband_config' %}" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="card shadow-sm mb-4">

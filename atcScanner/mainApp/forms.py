@@ -4,6 +4,7 @@ Author: Bc. Petr Balok
 
 from django import forms
 
+# Supported file types
 FILE_TYPES = [
     ('.cs16', 'cs16'),
     ('.cf32', 'cf32'),
@@ -11,6 +12,9 @@ FILE_TYPES = [
 
 
 class SettingsForm(forms.Form):
+    """
+    Pipeline settings form
+    """
     sleep_time = forms.IntegerField(min_value=1, label='Sleep time', help_text='How long to wait between checking for new files (in seconds)')
     file_ext = forms.ChoiceField(choices=FILE_TYPES, label='Input file type')
     min_audio_len = forms.FloatField(min_value=0, label='Minimum audio length (in seconds)', help_text='Use 0 to process all files')

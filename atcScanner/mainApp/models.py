@@ -8,6 +8,9 @@ from django.utils.translation import gettext_lazy as _
 
 
 class Recording(models.Model):
+    """
+    Recording metadata
+    """
     file_path = models.FilePathField()
     country = models.CharField(max_length=60)
     location = models.CharField(max_length=20)
@@ -30,12 +33,18 @@ class Recording(models.Model):
 
 
 class Transcripts(models.Model):
+    """
+    Link file path and job id for transcripts
+    """
     file_path = models.FilePathField()
     job_id = models.CharField(max_length=100)
     status = models.CharField(max_length=50)
 
 
 class Deleted(models.Model):
+    """
+    Deleted recordings and reasons for deletion
+    """
     class DeletionReason(models.TextChoices):
         EMPTY_FILE = 'empty_file', _('Empty file')
         SNR = 'snr', _('SNR threshold')

@@ -5,6 +5,7 @@ import WaveSurfer from 'https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.esm.js
 import Spectrogram from 'https://unpkg.com/wavesurfer.js@7/dist/plugins/spectrogram.esm.js'
 
 function createGraphs(){
+    // Create waveform graph and spectrogram
     const audioEl = document.querySelector("audio");
     const graphEl = document.querySelector("#graphs");
 
@@ -22,4 +23,5 @@ function createGraphs(){
     })
 }
 
+// Initialize waveform graph and spectrogram
 createGraphs();

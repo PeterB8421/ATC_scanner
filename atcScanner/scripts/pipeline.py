@@ -38,43 +38,47 @@ if project_root not in sys.path:
 from config_utils import get_config
 
 
-# Gets year from filename
 def get_year(filename):
+    """ Gets year from filename """
     part = filename.split('_')[-2]
     return part[:4]
 
 
-# Gets month from filename
 def get_month(filename):
+    """ Gets month from filename """
     part = filename.split('_')[-2]
     return part[4:6]
 
 
-# Gets day from filename
 def get_day(filename):
+    """ Gets day from filename """
     part = filename.split('_')[-2]
     return part[-2:]
 
 
 def get_hour(filename):
+    """ Gets hour from filename """
     part = filename.split('_')[-1]
     part = part.split('.')[0]
     return part[:2]
 
 
 def get_min(filename):
+    """ Gets minute from filename """
     part = filename.split('_')[-1]
     part = part.split('.')[0]
     return part[2:4]
 
 
 def get_sec(filename):
+    """ Gets second from filename """
     part = filename.split('_')[-1]
     part = part.split('.')[0]
     return part[-2:]
 
 
 def log_deletion(file_path, reason, settings, duration=None, snr=None):
+    """ Add deletion log to database """
     from mainApp.models import Deleted
     Deleted.objects.create(
         file_path=file_path,
@@ -108,6 +112,7 @@ def get_metadata_from_filepath(filepath, airport_data):
 
 
 def remove_output_files(output_filename):
+    """ Removes output files """
     try:
         os.remove(output_filename.replace('.wav', '_RAW.wav'))
     except Exception:
@@ -115,8 +120,8 @@ def remove_output_files(output_filename):
     os.remove(output_filename)
 
 
-# Processes a new raw file
 def process_file(input_file, settings):
+    """ Processes a new raw file """
     from mainApp.models import Recording, Deleted
     reason = Deleted.DeletionReason
     if os.path.getsize(input_file) == 0:
@@ -237,7 +242,7 @@ def process_file(input_file, settings):
 
 
 class GracefulShutdown:
-    # Class to let the script finish working and exit
+    """ Class to let the script finish working and exit """
     exit_needed = False
     restart = False
 

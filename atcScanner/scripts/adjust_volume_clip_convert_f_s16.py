@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+"""
+This file was provided by the thesis supervisor.
+"""
 # ATCO2 EU project. License: Apache 2.0.
 # Copyright 2020 Brno University of Technology (author: Karel Vesely).
 

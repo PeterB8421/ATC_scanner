@@ -4,7 +4,7 @@ Author: Bc. Petr Balok
 let currentPage = 1;
 
 function get_del_log(){
-    // Get recordings via server API
+    // Get deleted file paths via server API
     const url = new URL('/api/get_deleted_log', window.location.origin);
 
     url.searchParams.append('page', currentPage.toString());
@@ -25,6 +25,7 @@ function get_del_log(){
             return response.json();
         })
         .then(data => {
+                // Table content HTML element
                 const tableEl = document.getElementById('del-table-content');
                 tableEl.innerHTML = "";
 
@@ -37,6 +38,7 @@ function get_del_log(){
 
                 const reasonLower = (d.reason || "").toLowerCase();
 
+                // Highlight reason for which the file was deleted
                 if (reasonLower.includes("snr")) {
                     snrClass = "table-danger";
 
@@ -68,6 +70,7 @@ function get_del_log(){
             }).join('');
                 tableEl.innerHTML = rows;
 
+                // Page navigator
                 const pageStats = data.pagination;
                 document.getElementById('page-info').textContent = `Page ${pageStats.current_page} of ${pageStats.total_pages}`;
                 document.getElementById('prev-page').disabled = !pageStats.has_previous;
@@ -77,6 +80,7 @@ function get_del_log(){
 }
 
 async function loadReasonFilters() {
+    // Get reasons for deletion from database
     try {
         const response = await fetch('/api/get_delete_reasons');
         if (!response.ok) throw new Error("Failed to load filters");
@@ -84,7 +88,7 @@ async function loadReasonFilters() {
         const data = await response.json();
         const selectElement = document.getElementById('reason-filter');
 
-        // Loop through the JSON and create <option> tags dynamically
+        // Loop through the JSON and create tags from returned reasons
         data.reasons.forEach(reason => {
             const option = document.createElement('option');
             option.value = reason.value;
@@ -98,24 +102,28 @@ async function loadReasonFilters() {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-    // Load filter per reason
+    // Load reasons for deletion to select element
     loadReasonFilters();
 });
 
 
 document.getElementById('prev-page').addEventListener('click', () => {
+    // Go to previous page
     currentPage--;
     get_del_log();
 });
 
 document.getElementById('next-page').addEventListener('click', () => {
+    // Go to next page
     currentPage++;
     get_del_log();
 });
 
 document.getElementById('reason-filter').addEventListener('change', function() {
-    currentPage = 1; // Always reset to page 1 when applying a new filter!
+    // Select element was changed, reload table
+    currentPage = 1; // Reset to page 1 after changing the filter value
     get_del_log();
 });
 
+// Initialize the table after loading the page
 get_del_log();
