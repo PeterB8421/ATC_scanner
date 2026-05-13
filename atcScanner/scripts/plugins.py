@@ -134,7 +134,8 @@ class ASRAPIPolling(BaseProcessor):
         base_url = self.config["url"]  # Base URL of ASR API
         status_url = f"{base_url}/status/{job_id}"  # URL to get job status
 
-        max_attempts = 300  # Timeout after 5 minutes
+        max_attempts = self.config["max_retries"]  # Timeout after 5 minutes
+        retry_period = self.config["retry_period"]
         attempts = 0
 
         # Make an async connection to the API and poll the status
@@ -164,7 +165,7 @@ class ASRAPIPolling(BaseProcessor):
                     await self._update_json_transcript(file_path, FAIL_TEXT)
                     await self._update_database_transcript(file_path, FAIL_TEXT)
 
-                await asyncio.sleep(1)
+                await asyncio.sleep(retry_period)
             logging.error(f"ASR API timed out for {file_path}")
             await self._update_json_transcript(file_path, FAIL_TEXT)
             await self._update_database_transcript(file_path, FAIL_TEXT)

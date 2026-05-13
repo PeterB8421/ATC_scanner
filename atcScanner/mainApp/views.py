@@ -428,8 +428,8 @@ def settings(request):
     """ Settings page """
     if request.method == "GET":
         # User wants to render the page
-        form = SettingsForm(get_config())
-        airport_data = get_config().get('airports', [])
+        form = SettingsForm(get_config('/scripts/conf/pipeline.json'))
+        airport_data = get_config('/scripts/conf/pipeline.json').get('airports', [])
         return render(request, 'settings.html', {"form": form, 'airport_data': airport_data})
 
     elif request.method == "POST":
@@ -448,7 +448,7 @@ def settings(request):
             else:
                 messages.error(request, 'Unsupported input file type')
                 return render(request, 'settings.html', {'form': form})
-            current_config = get_config()
+            current_config = get_config('/scripts/conf/pipeline.json')
 
             current_config.update(form.cleaned_data)  # Update config JSON
 

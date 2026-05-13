@@ -3,15 +3,24 @@ Author: Bc. Petr Balok
 """
 
 import abc
+import os
+import sys
 from typing import Dict, Any
 
+# Import shared config function
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(script_dir)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+from config_utils import get_config
 
 class BaseProcessor(abc.ABC):
     """
     Abstract class for plugins to process data from pipeline.
     """
-    def __init__(self, config: Dict[str, Any]):
-        self.config = config
+    def __init__(self, config_path: Dict[str, Any]):
+        self.config = get_config(config_path)
 
     @abc.abstractmethod
     def process(self, file_path: str):

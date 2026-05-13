@@ -1,0 +1,5 @@
+{
+  "url": "http://host.docker.internal:11000",
+  "retry_period": 1,
+  "max_retries": 300
+}

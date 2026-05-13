@@ -19,14 +19,9 @@ from datetime import datetime
 
 ACTIVE_PLUGINS = {
     # ASR API polling plugin
-    # "asr_api_polling": {
-    # If ASR API is running on the same machine, use domain: http://host.docker.internal:11000
-    #     "url": "http://host.docker.internal:11000"
-    # },
+    # "asr_api_polling": "/scripts/conf/polling.json",
     # ASR API webhook plugin
-    # "asr_api_webhook": {
-    #     "url": "http://host.docker.internal:11000"
-    # }
+    # "asr_api_webhook": "/scripts/conf/webhook.json"
 }
 
 # Import shared config function
@@ -278,7 +273,7 @@ def main():
     if not os.path.exists(input_files_path):
         logging.critical('Raw files path does not exist!')
 
-    settings = get_config()
+    settings = get_config('/scripts/conf/pipeline.json')
 
     terminator = GracefulShutdown()
 
@@ -291,7 +286,7 @@ def main():
         if os.path.exists(restart_flag):
             logging.info('Reloading settings')
             os.remove(restart_flag)
-            settings = get_config()
+            settings = get_config('/scripts/conf/pipeline.json')
 
         if elapsed_time_sec >= settings['sleep_time']:
             elapsed_time_sec = 0
