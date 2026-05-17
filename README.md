@@ -1,4 +1,4 @@
-# Automated system for ATC data collecton running on RPi
+# Automated system for ATC data collection running on RPi
 ## Author: Bc. Petr Balok
 ## Supervisor: Ing. Igor Szöke PhD.
 Pipeline for automatic processing of ATC data created by RTL Airband with web user interface, designed to run on Raspberry Pi. This repository is the implementation part of my Master's thesis.
